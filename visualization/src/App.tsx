@@ -26,6 +26,8 @@ function App() {
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
   const [filterPanelPosition, setFilterPanelPosition] = useState<{ top: number; left: number } | null>(null);
+  const [isFilterPanelRendered, setIsFilterPanelRendered] = useState<boolean>(false);
+  const filterPanelCloseTimeoutRef = useRef<number | null>(null);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     statusFilter: 'all',
     searchQuery: '',
@@ -193,8 +195,48 @@ function App() {
   }, []);
 
   // Filter button click handler
+  const closeFilterPanel = useCallback(() => {
+    setShowFilterPanel(false);
+
+    if (filterPanelCloseTimeoutRef.current) {
+      window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      filterPanelCloseTimeoutRef.current = null;
+    }
+
+    // Keep mounted briefly so CSS transition can animate out.
+    filterPanelCloseTimeoutRef.current = window.setTimeout(() => {
+      setIsFilterPanelRendered(false);
+      filterPanelCloseTimeoutRef.current = null;
+    }, 180);
+  }, []);
+
+  const openFilterPanel = useCallback(() => {
+    if (filterPanelCloseTimeoutRef.current) {
+      window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      filterPanelCloseTimeoutRef.current = null;
+    }
+
+    setIsFilterPanelRendered(true);
+    // Defer to allow initial DOM paint so transition can play.
+    requestAnimationFrame(() => {
+      setShowFilterPanel(true);
+    });
+  }, []);
+
   const handleFilterClick = useCallback(() => {
-    setShowFilterPanel((prev) => !prev);
+    if (showFilterPanel) {
+      closeFilterPanel();
+      return;
+    }
+    openFilterPanel();
+  }, [closeFilterPanel, openFilterPanel, showFilterPanel]);
+
+  useEffect(() => {
+    return () => {
+      if (filterPanelCloseTimeoutRef.current) {
+        window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      }
+    };
   }, []);
 
   const updateFilterPanelPosition = useCallback(() => {
@@ -215,10 +257,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!showFilterPanel) {
-      setFilterPanelPosition(null);
-      return;
-    }
+    if (!showFilterPanel) return;
 
     updateFilterPanelPosition();
 
@@ -379,16 +418,16 @@ function App() {
       </main>
       
       {/* Filter panel */}
-      {showFilterPanel && filterPanelPosition && (
+      {isFilterPanelRendered && filterPanelPosition && (
         <div
-          className="filter-panel-container"
+          className={`filter-panel-container ${showFilterPanel ? 'is-open' : 'is-closed'}`}
           style={{ top: filterPanelPosition.top, left: filterPanelPosition.left }}
         >
           <FilterPanel
             options={filterOptions}
             onChange={handleFilterChange}
             isOpen={showFilterPanel}
-            onClose={() => setShowFilterPanel(false)}
+            onClose={closeFilterPanel}
             ignoreOutsideClickRef={filterButtonRef}
           />
         </div>

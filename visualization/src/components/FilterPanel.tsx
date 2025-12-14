@@ -160,9 +160,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       statusOptionRefs.current[selectedIndex]?.focus();
     });
   }, [isStatusMenuOpen, localOptions.statusFilter, statusValues]);
-  
-  if (!isOpen) return null;
 
+  useEffect(() => {
+    if (isOpen) return;
+    setIsStatusMenuOpen(false);
+  }, [isOpen]);
+  
   return (
     <div 
       ref={panelRef}

@@ -239,12 +239,6 @@ h1 {
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
 }
 
-/* 特定のコンポーネントスタイル */
-.dark-mode .filter-panel {
-  background-color: var(--panel-bg);
-  box-shadow: 0 4px 6px var(--panel-shadow);
-}
-
 .dark-mode .export-panel {
   background-color: var(--panel-bg);
   box-shadow: 0 4px 6px var(--panel-shadow);
