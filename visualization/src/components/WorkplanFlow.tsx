@@ -328,7 +328,7 @@ const WorkplanFlow = ({
         )}
         
         {/* Controls - responsive */}
-        <Controls style={controlsStyle} showZoom showFitView showInteractive />
+        <Controls position="bottom-right" style={controlsStyle} showZoom showFitView showInteractive />
         
         <Background
           variant={BackgroundVariant.Dots}

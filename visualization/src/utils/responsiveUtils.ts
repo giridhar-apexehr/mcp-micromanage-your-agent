@@ -111,10 +111,10 @@ export function useResponsiveFlowDimensions() {
   
   const controlsStyle = getResponsiveValue<React.CSSProperties>(
     {
-      xs: { left: 'auto', top: 'auto', right: '5px', bottom: '5px', transform: 'scale(0.8)' },
-      sm: { left: 'auto', top: 'auto', right: '10px', bottom: '10px', transform: 'scale(0.9)' },
-      md: { left: 'auto', top: 'auto', right: '10px', bottom: '10px' },
-      default: { left: 'auto', top: 'auto', right: '10px', bottom: '10px' }
+      xs: { right: '5px', bottom: '5px', transform: 'scale(0.8)' },
+      sm: { right: '10px', bottom: '10px', transform: 'scale(0.9)' },
+      md: { right: '10px', bottom: '10px' },
+      default: { right: '10px', bottom: '10px' }
     },
     breakpoint
   );
