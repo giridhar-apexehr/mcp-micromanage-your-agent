@@ -14,6 +14,7 @@ export interface CommitNodeData {
 const statusLabels: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
   'in_progress': 'In Progress',
+  'blocked': 'Blocked',
   'completed': 'Completed',
   'cancelled': 'Cancelled',
   'needsRefinment': 'Needs Refinement',
@@ -23,6 +24,7 @@ const statusLabels: Record<CommitStatus, string> = {
 const statusIcons: Record<CommitStatus, string> = {
   'not_started': '⚪',
   'in_progress': '🔵',
+  'blocked': '⛔',
   'completed': '✅',
   'cancelled': '❌',
   'needsRefinment': '🔄',
@@ -78,10 +80,10 @@ function CommitNode({ data }: { data: CommitNodeData }) {
         <span className="mr-1" aria-hidden="true">{statusIcons[data.status]}</span>
         <span>{statusLabels[data.status]}</span>
       </div>
-              {/* Goal (Title) */}
-              <div 
-        className="text-base font-medium break-words text-center mb-2"
+      <div 
+        className="commit-node__goal text-base font-medium text-center mb-2"
         aria-label="Commit goal"
+        title={data.title}
       >
         {data.title}
       </div>

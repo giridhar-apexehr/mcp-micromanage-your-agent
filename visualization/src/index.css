@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -99,8 +97,7 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  display: block;
   min-width: 320px;
   min-height: 100vh;
   background-color: var(--background-color);
@@ -113,23 +110,27 @@ h1 {
   line-height: 1.1;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+@layer base {
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    color: inherit;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  button:hover {
+    border-color: transparent;
+  }
+
+  button:focus,
+  button:focus-visible {
+    outline: none;
+  }
 }
 
 @media (prefers-color-scheme: light) {
@@ -139,9 +140,6 @@ button:focus-visible {
   }
   a:hover {
     color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
   }
 }
 
@@ -239,12 +237,6 @@ button:focus-visible {
   border-color: var(--input-focus-border);
   outline: none;
   box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
-}
-
-/* 特定のコンポーネントスタイル */
-.dark-mode .filter-panel {
-  background-color: var(--panel-bg);
-  box-shadow: 0 4px 6px var(--panel-shadow);
 }
 
 .dark-mode .export-panel {

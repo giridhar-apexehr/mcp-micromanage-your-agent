@@ -24,6 +24,10 @@ function App() {
   const pollingTimeoutRef = useRef<number | null>(null);
   
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
+  const filterButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [filterPanelPosition, setFilterPanelPosition] = useState<{ top: number; left: number } | null>(null);
+  const [isFilterPanelRendered, setIsFilterPanelRendered] = useState<boolean>(false);
+  const filterPanelCloseTimeoutRef = useRef<number | null>(null);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     statusFilter: 'all',
     searchQuery: '',
@@ -191,9 +195,85 @@ function App() {
   }, []);
 
   // Filter button click handler
-  const handleFilterClick = useCallback(() => {
-    setShowFilterPanel(true);
+  const closeFilterPanel = useCallback(() => {
+    setShowFilterPanel(false);
+
+    if (filterPanelCloseTimeoutRef.current) {
+      window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      filterPanelCloseTimeoutRef.current = null;
+    }
+
+    // Keep mounted briefly so CSS transition can animate out.
+    filterPanelCloseTimeoutRef.current = window.setTimeout(() => {
+      setIsFilterPanelRendered(false);
+      filterPanelCloseTimeoutRef.current = null;
+    }, 180);
   }, []);
+
+  const openFilterPanel = useCallback(() => {
+    if (filterPanelCloseTimeoutRef.current) {
+      window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      filterPanelCloseTimeoutRef.current = null;
+    }
+
+    setIsFilterPanelRendered(true);
+    // Defer to allow initial DOM paint so transition can play.
+    requestAnimationFrame(() => {
+      setShowFilterPanel(true);
+    });
+  }, []);
+
+  const handleFilterClick = useCallback(() => {
+    if (showFilterPanel) {
+      closeFilterPanel();
+      return;
+    }
+    openFilterPanel();
+  }, [closeFilterPanel, openFilterPanel, showFilterPanel]);
+
+  useEffect(() => {
+    return () => {
+      if (filterPanelCloseTimeoutRef.current) {
+        window.clearTimeout(filterPanelCloseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const updateFilterPanelPosition = useCallback(() => {
+    const button = filterButtonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const margin = 10;
+    const viewportWidth = window.innerWidth;
+
+    // Keep behavior consistent with CSS: width is at most 320px, but can shrink to fit viewport.
+    const panelWidth = Math.min(320, Math.max(200, viewportWidth - 20));
+    const desiredLeft = rect.left;
+    const clampedLeft = Math.min(Math.max(10, desiredLeft), viewportWidth - 10 - panelWidth);
+    const top = rect.bottom + margin;
+
+    setFilterPanelPosition({ top, left: clampedLeft });
+  }, []);
+
+  useEffect(() => {
+    if (!showFilterPanel) return;
+
+    updateFilterPanelPosition();
+
+    const handleViewportChange = () => {
+      updateFilterPanelPosition();
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    // Capture scroll events from nested scroll containers too.
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [showFilterPanel, updateFilterPanelPosition]);
   
   const toggleThemeMode = useCallback(() => {
     setThemeMode((prev) => {
@@ -313,7 +393,8 @@ function App() {
 
               <button
                 onClick={handleFilterClick}
-                className="morphic-btn morphic-btn--primary"
+                ref={filterButtonRef}
+                className={`morphic-btn ${showFilterPanel ? 'is-active' : ''}`}
                 aria-label="Open filter"
                 type="button"
               >
@@ -337,16 +418,20 @@ function App() {
       </main>
       
       {/* Filter panel */}
-      <div className="filter-panel-container">
-        {showFilterPanel && (
+      {isFilterPanelRendered && filterPanelPosition && (
+        <div
+          className={`filter-panel-container ${showFilterPanel ? 'is-open' : 'is-closed'}`}
+          style={{ top: filterPanelPosition.top, left: filterPanelPosition.left }}
+        >
           <FilterPanel
             options={filterOptions}
             onChange={handleFilterChange}
             isOpen={showFilterPanel}
-            onClose={() => setShowFilterPanel(false)}
+            onClose={closeFilterPanel}
+            ignoreOutsideClickRef={filterButtonRef}
           />
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Device orientation warning (mobile only) */}
       <OrientationWarning />

@@ -132,7 +132,7 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
 
     const prNode: ExtendedNode<NodeData | CommitNodeData> = {
       id: prId,
-      type: 'default',
+      type: 'prNode',
       className: `pr-node status-${prStatus}`,
       position: {
         x: layout.INITIAL_X + layout.HORIZONTAL_SPACING * prIndex,

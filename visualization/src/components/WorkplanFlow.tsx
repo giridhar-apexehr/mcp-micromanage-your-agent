@@ -23,6 +23,8 @@ import {
 } from '../utils/workplanConverter';
 import { useResponsiveFlowDimensions } from '../utils/responsiveUtils';
 import CommitNode from './CommitNode';
+import type { CommitNodeData } from './CommitNode';
+import PRNode from './PRNode';
 import { FilterOptions } from '../components/FilterPanel';
 import './nodes/nodes.css';
 
@@ -98,6 +100,7 @@ const CustomEdge = ({
 // Register custom node types
 const nodeTypes: NodeTypes = {
   commitNode: CommitNode,
+  prNode: PRNode,
 };
 
 // Register custom edge types
@@ -109,6 +112,7 @@ const edgeTypes: EdgeTypes = {
 const statusLabels: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
   'in_progress': 'In Progress',
+  'blocked': 'Blocked',
   'completed': 'Completed',
   'cancelled': 'Cancelled',
   'needsRefinment': 'Needs Refinement',
@@ -120,6 +124,24 @@ const WorkplanFlow = ({
   workplan, 
   filterOptions
 }: WorkplanFlowProps) => {
+  const isCommitStatus = (value: unknown): value is CommitStatus => {
+    return (
+      value === 'not_started' ||
+      value === 'in_progress' ||
+      value === 'blocked' ||
+      value === 'completed' ||
+      value === 'cancelled' ||
+      value === 'needsRefinment' ||
+      value === 'user_review'
+    );
+  };
+
+  const getNodeStatus = (data: unknown): CommitStatus | undefined => {
+    if (!data || typeof data !== 'object') return undefined;
+    const maybeStatus = (data as { status?: unknown }).status;
+    return isCommitStatus(maybeStatus) ? maybeStatus : undefined;
+  };
+
   // Default filter options
   const defaultFilterOptions: FilterOptions = {
     statusFilter: 'all',
@@ -152,15 +174,30 @@ const WorkplanFlow = ({
   const nodesWithCallbacks = useMemo(() => {
     return initialNodes.map(node => {
       if (node.type === 'commitNode') {
-        const nodeData = node.data as any; // Temporarily handle as any
+        const nodeData = node.data as unknown as Partial<CommitNodeData> & {
+          label?: unknown;
+          status?: unknown;
+          title?: unknown;
+          prIndex?: unknown;
+          commitIndex?: unknown;
+        };
+
+        const titleFromLabel = typeof nodeData.label === 'string' ? nodeData.label : '';
+        const title = typeof nodeData.title === 'string' ? nodeData.title : titleFromLabel;
+        const status: CommitNodeData['status'] = isCommitStatus(nodeData.status) ? nodeData.status : 'not_started';
+        const prIndex = typeof nodeData.prIndex === 'number' ? nodeData.prIndex : 0;
+        const commitIndex = typeof nodeData.commitIndex === 'number' ? nodeData.commitIndex : 0;
+
+        const normalizedData: CommitNodeData = {
+          ...(nodeData as unknown as CommitNodeData),
+          title,
+          status,
+          prIndex,
+          commitIndex,
+        };
         return {
           ...node,
-          data: {
-            ...nodeData,
-            // Fallback if data doesn't have necessary properties
-            title: nodeData.title || nodeData.label || '',
-            status: nodeData.status || 'not_started'
-          }
+          data: normalizedData,
         };
       }
       return node;
@@ -276,12 +313,12 @@ const WorkplanFlow = ({
             style={miniMapStyle}
             nodeStrokeWidth={3}
             nodeColor={(node) => {
-              const status = (node.data as any)?.status as CommitStatus | undefined;
+              const status = getNodeStatus(node.data);
               if (!status) return 'var(--node-bg)';
               return `var(--status-border-${status})`;
             }}
             nodeStrokeColor={(node) => {
-              const status = (node.data as any)?.status as CommitStatus | undefined;
+              const status = getNodeStatus(node.data);
               if (!status) return 'var(--node-border)';
               return 'var(--node-border)';
             }}
