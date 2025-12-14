@@ -231,6 +231,21 @@ header {
   color: var(--text-color);
 }
 
+.dark-mode .filter-panel select {
+  color-scheme: dark;
+}
+
+.dark-mode .filter-panel select option {
+  background-color: rgba(31, 41, 55, 1);
+  color: rgba(226, 232, 240, 0.96);
+}
+
+.dark-mode .filter-panel select option:checked,
+.dark-mode .filter-panel select option:hover {
+  background-color: rgba(59, 130, 246, 0.24);
+  color: rgba(255, 255, 255, 0.98);
+}
+
 .filter-panel input[type="text"]::placeholder {
   color: rgba(100, 116, 139, 0.9);
 }
