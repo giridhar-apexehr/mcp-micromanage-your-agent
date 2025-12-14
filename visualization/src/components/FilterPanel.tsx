@@ -56,13 +56,6 @@ const STATUS_ICONS: Record<CommitStatus | 'all', IconType> = {
   'user_review': Eye,
 };
 
-// Pre-generate status options
-const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([status, label]) => (
-  <option key={status} value={status}>
-    {label}
-  </option>
-));
-
 const FilterPanel: React.FC<FilterPanelProps> = ({ 
   options, 
   onChange,
@@ -72,6 +65,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 }) => {
   const [localOptions, setLocalOptions] = useState<FilterOptions>(options);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState<boolean>(false);
+  const [activeStatusIndex, setActiveStatusIndex] = useState<number>(0);
+  const statusTriggerRef = useRef<HTMLButtonElement>(null);
+  const statusMenuRef = useRef<HTMLDivElement>(null);
+  const statusOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const statusValues = Object.keys(STATUS_LABELS) as Array<CommitStatus | 'all'>;
   
   // Update internal state when options from props change
   useEffect(() => {
@@ -119,13 +118,48 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        if (isStatusMenuOpen) {
+          setIsStatusMenuOpen(false);
+          statusTriggerRef.current?.focus();
+          return;
+        }
         onClose();
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isStatusMenuOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!isStatusMenuOpen) return;
+
+    const handleStatusOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const trigger = statusTriggerRef.current;
+      const menu = statusMenuRef.current;
+
+      if (trigger && trigger.contains(target)) return;
+      if (menu && menu.contains(target)) return;
+
+      setIsStatusMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleStatusOutsideClick);
+    return () => document.removeEventListener('mousedown', handleStatusOutsideClick);
+  }, [isOpen, isStatusMenuOpen]);
+
+  useEffect(() => {
+    if (!isStatusMenuOpen) return;
+    const selectedIndex = Math.max(0, statusValues.indexOf(localOptions.statusFilter));
+    setActiveStatusIndex(selectedIndex);
+
+    // Focus after render.
+    queueMicrotask(() => {
+      statusOptionRefs.current[selectedIndex]?.focus();
+    });
+  }, [isStatusMenuOpen, localOptions.statusFilter, statusValues]);
   
   if (!isOpen) return null;
 
@@ -158,13 +192,23 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             Status
           </label>
           <div className="relative">
-            <select
-              value={localOptions.statusFilter}
-              onChange={(e) => handleChange('statusFilter', e.target.value as FilterOptions['statusFilter'])}
-              className="w-full p-2 pl-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none"
+            <button
+              ref={statusTriggerRef}
+              type="button"
+              className="filter-panel__control"
+              aria-haspopup="listbox"
+              aria-expanded={isStatusMenuOpen}
+              aria-label="Status"
+              onClick={() => setIsStatusMenuOpen((prev) => !prev)}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setIsStatusMenuOpen(true);
+                }
+              }}
             >
-              {STATUS_OPTIONS}
-            </select>
+              {STATUS_LABELS[localOptions.statusFilter as CommitStatus | 'all']}
+            </button>
             <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
               {(() => {
                 const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all'];
@@ -174,6 +218,81 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             <div className="filter-panel__field-suffix absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
               <ChevronDown className="h-5 w-5 text-gray-400 filter-panel__chevron" aria-hidden="true" />
             </div>
+
+            {isStatusMenuOpen && (
+              <div
+                ref={statusMenuRef}
+                className="filter-panel__menu"
+                role="listbox"
+                aria-label="Status"
+                tabIndex={-1}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setIsStatusMenuOpen(false);
+                    statusTriggerRef.current?.focus();
+                    return;
+                  }
+
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setActiveStatusIndex((prev) => {
+                      const next = Math.min(statusValues.length - 1, prev + 1);
+                      queueMicrotask(() => statusOptionRefs.current[next]?.focus());
+                      return next;
+                    });
+                    return;
+                  }
+
+                  if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setActiveStatusIndex((prev) => {
+                      const next = Math.max(0, prev - 1);
+                      queueMicrotask(() => statusOptionRefs.current[next]?.focus());
+                      return next;
+                    });
+                    return;
+                  }
+
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    const nextStatus = statusValues[activeStatusIndex];
+                    handleChange('statusFilter', nextStatus);
+                    setIsStatusMenuOpen(false);
+                    statusTriggerRef.current?.focus();
+                  }
+                }}
+              >
+                {statusValues.map((status, index) => {
+                  const Icon = STATUS_ICONS[status];
+                  const isSelected = status === localOptions.statusFilter;
+
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      className={`filter-panel__menu-item ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        handleChange('statusFilter', status);
+                        setIsStatusMenuOpen(false);
+                        statusTriggerRef.current?.focus();
+                      }}
+                      ref={(node) => {
+                        statusOptionRefs.current[index] = node;
+                      }}
+                      tabIndex={index === activeStatusIndex ? 0 : -1}
+                    >
+                      <span className="filter-panel__menu-icon" aria-hidden="true">
+                        <Icon className="morphic-icon" size={16} strokeWidth={2} />
+                      </span>
+                      <span className="filter-panel__menu-label">{STATUS_LABELS[status]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
         
