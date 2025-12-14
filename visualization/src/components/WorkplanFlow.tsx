@@ -275,6 +275,16 @@ const WorkplanFlow = ({
           <MiniMap 
             style={miniMapStyle}
             nodeStrokeWidth={3}
+            nodeColor={(node) => {
+              const status = (node.data as any)?.status as CommitStatus | undefined;
+              if (!status) return 'var(--node-bg)';
+              return `var(--status-border-${status})`;
+            }}
+            nodeStrokeColor={(node) => {
+              const status = (node.data as any)?.status as CommitStatus | undefined;
+              if (!status) return 'var(--node-border)';
+              return 'var(--node-border)';
+            }}
             zoomable
             pannable
           />

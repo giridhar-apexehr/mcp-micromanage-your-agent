@@ -215,11 +215,6 @@ button:focus-visible {
   fill: var(--panel-bg);
 }
 
-.dark-mode .react-flow__minimap-node {
-  fill: var(--node-bg);
-  stroke: var(--node-border);
-}
-
 /* コンポーネントのダークモード対応 */
 .dark-mode button {
   background-color: var(--button-secondary-bg);
