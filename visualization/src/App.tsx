@@ -24,6 +24,8 @@ function App() {
   const pollingTimeoutRef = useRef<number | null>(null);
   
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
+  const filterButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [filterPanelPosition, setFilterPanelPosition] = useState<{ top: number; left: number } | null>(null);
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     statusFilter: 'all',
     searchQuery: '',
@@ -192,8 +194,47 @@ function App() {
 
   // Filter button click handler
   const handleFilterClick = useCallback(() => {
-    setShowFilterPanel(true);
+    setShowFilterPanel((prev) => !prev);
   }, []);
+
+  const updateFilterPanelPosition = useCallback(() => {
+    const button = filterButtonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const margin = 10;
+    const viewportWidth = window.innerWidth;
+
+    // Keep behavior consistent with CSS: width is at most 320px, but can shrink to fit viewport.
+    const panelWidth = Math.min(320, Math.max(200, viewportWidth - 20));
+    const desiredLeft = rect.left;
+    const clampedLeft = Math.min(Math.max(10, desiredLeft), viewportWidth - 10 - panelWidth);
+    const top = rect.bottom + margin;
+
+    setFilterPanelPosition({ top, left: clampedLeft });
+  }, []);
+
+  useEffect(() => {
+    if (!showFilterPanel) {
+      setFilterPanelPosition(null);
+      return;
+    }
+
+    updateFilterPanelPosition();
+
+    const handleViewportChange = () => {
+      updateFilterPanelPosition();
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    // Capture scroll events from nested scroll containers too.
+    window.addEventListener('scroll', handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [showFilterPanel, updateFilterPanelPosition]);
   
   const toggleThemeMode = useCallback(() => {
     setThemeMode((prev) => {
@@ -313,7 +354,8 @@ function App() {
 
               <button
                 onClick={handleFilterClick}
-                className="morphic-btn morphic-btn--primary"
+                ref={filterButtonRef}
+                className={`morphic-btn ${showFilterPanel ? 'is-active' : ''}`}
                 aria-label="Open filter"
                 type="button"
               >
@@ -337,16 +379,20 @@ function App() {
       </main>
       
       {/* Filter panel */}
-      <div className="filter-panel-container">
-        {showFilterPanel && (
+      {showFilterPanel && filterPanelPosition && (
+        <div
+          className="filter-panel-container"
+          style={{ top: filterPanelPosition.top, left: filterPanelPosition.left }}
+        >
           <FilterPanel
             options={filterOptions}
             onChange={handleFilterChange}
             isOpen={showFilterPanel}
             onClose={() => setShowFilterPanel(false)}
+            ignoreOutsideClickRef={filterButtonRef}
           />
-        )}
-      </div>
+        </div>
+      )}
       
       {/* Device orientation warning (mobile only) */}
       <OrientationWarning />

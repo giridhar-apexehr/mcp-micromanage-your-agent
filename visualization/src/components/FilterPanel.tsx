@@ -13,6 +13,7 @@ interface FilterPanelProps {
   onChange: (newOptions: FilterOptions) => void;
   isOpen: boolean;
   onClose: () => void;
+  ignoreOutsideClickRef?: React.RefObject<HTMLElement | null>;
 }
 
 // Status display name mapping
@@ -50,7 +51,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   options, 
   onChange,
   isOpen,
-  onClose
+  onClose,
+  ignoreOutsideClickRef
 }) => {
   const [localOptions, setLocalOptions] = useState<FilterOptions>(options);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -83,6 +85,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     if (!isOpen) return;
     
     const handleOutsideClick = (event: MouseEvent) => {
+      if (ignoreOutsideClickRef?.current && ignoreOutsideClickRef.current.contains(event.target as Node)) {
+        return;
+      }
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -90,7 +95,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, ignoreOutsideClickRef]);
   
   // Close panel with Esc key
   useEffect(() => {
