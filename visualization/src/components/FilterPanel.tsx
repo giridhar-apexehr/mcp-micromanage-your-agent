@@ -1,5 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { CommitStatus } from '../types';
+import {
+  AlertTriangle,
+  Ban,
+  CheckCircle2,
+  ChevronDown,
+  Circle,
+  Eye,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+  XCircle,
+  type LucideProps,
+} from 'lucide-react';
 
 // Filter settings type
 export interface FilterOptions {
@@ -29,21 +44,22 @@ const STATUS_LABELS: Record<CommitStatus | 'all', string> = {
 };
 
 // Status icon mapping
-const STATUS_ICONS: Record<CommitStatus | 'all', string> = {
-  'all': '🔍',
-  'not_started': '⚪',
-  'in_progress': '🔄',
-  'blocked': '⛔',
-  'completed': '✅',
-  'cancelled': '❌',
-  'needsRefinment': '⚠️',
-  'user_review': '👀'
+type IconType = React.ComponentType<LucideProps>;
+const STATUS_ICONS: Record<CommitStatus | 'all', IconType> = {
+  'all': Search,
+  'not_started': Circle,
+  'in_progress': RefreshCw,
+  'blocked': Ban,
+  'completed': CheckCircle2,
+  'cancelled': XCircle,
+  'needsRefinment': AlertTriangle,
+  'user_review': Eye,
 };
 
 // Pre-generate status options
 const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([status, label]) => (
   <option key={status} value={status}>
-    {STATUS_ICONS[status as CommitStatus | 'all']} {label}
+    {label}
   </option>
 ));
 
@@ -120,15 +136,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-          <span className="mr-2">🔍</span>
+          <span className="mr-2" aria-hidden="true">
+            <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
+          </span>
           Filter Settings
         </h3>
         <button 
           onClick={onClose}
           className="filter-panel__close text-gray-500 hover:text-gray-700 text-xl transition-colors p-1 rounded-full hover:bg-gray-100"
           aria-label="Close"
+          type="button"
         >
-          &times;
+          <X className="morphic-icon" size={18} strokeWidth={2} />
         </button>
       </div>
       
@@ -147,12 +166,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               {STATUS_OPTIONS}
             </select>
             <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-              {STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all']}
+              {(() => {
+                const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all'];
+                return <Icon className="morphic-icon" size={16} strokeWidth={2} />;
+              })()}
             </div>
             <div className="filter-panel__field-suffix absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400 filter-panel__chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              <ChevronDown className="h-5 w-5 text-gray-400 filter-panel__chevron" aria-hidden="true" />
             </div>
           </div>
         </div>
@@ -171,19 +191,16 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               className="w-full p-2 pl-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+              <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </div>
             {localOptions.searchQuery && (
               <button
                 onClick={() => handleChange('searchQuery', '')}
                 className="filter-panel__icon-btn absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
                 aria-label="Clear search"
+                type="button"
               >
-                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -211,37 +228,48 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             
             {localOptions.statusFilter !== 'all' && (
               <span className="filter-panel__chip filter-panel__chip--blue inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {STATUS_ICONS[localOptions.statusFilter as CommitStatus]}
+                {(() => {
+                  const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus];
+                  return <Icon className="morphic-icon" size={14} strokeWidth={2} />;
+                })()}
                 <span className="ml-1">{STATUS_LABELS[localOptions.statusFilter as CommitStatus]}</span>
                 <button
                   onClick={() => handleChange('statusFilter', 'all')}
                   className="filter-panel__chip-close ml-1 text-blue-500 hover:text-blue-700"
+                  aria-label="Clear status filter"
+                  type="button"
                 >
-                  ×
+                  <X size={14} strokeWidth={2} aria-hidden="true" />
                 </button>
               </span>
             )}
             
             {localOptions.searchQuery.trim() && (
               <span className="filter-panel__chip filter-panel__chip--green inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                🔍 {localOptions.searchQuery}
+                <Search className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+                <span className="ml-1">{localOptions.searchQuery}</span>
                 <button
                   onClick={() => handleChange('searchQuery', '')}
                   className="filter-panel__chip-close ml-1 text-green-500 hover:text-green-700"
+                  aria-label="Clear search filter"
+                  type="button"
                 >
-                  ×
+                  <X size={14} strokeWidth={2} aria-hidden="true" />
                 </button>
               </span>
             )}
             
             {localOptions.onlyShowActive && (
               <span className="filter-panel__chip filter-panel__chip--yellow inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                🔄 Active Only
+                <RefreshCw className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+                <span className="ml-1">Active Only</span>
                 <button
                   onClick={() => handleChange('onlyShowActive', false)}
                   className="filter-panel__chip-close ml-1 text-yellow-500 hover:text-yellow-700"
+                  aria-label="Clear active-only filter"
+                  type="button"
                 >
-                  ×
+                  <X size={14} strokeWidth={2} aria-hidden="true" />
                 </button>
               </span>
             )}
@@ -253,10 +281,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <button
             onClick={handleReset}
             className="filter-panel__reset px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-sm transition-colors flex items-center"
+            type="button"
           >
-            <svg className="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-            </svg>
+            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" />
             Reset
           </button>
         </div>
