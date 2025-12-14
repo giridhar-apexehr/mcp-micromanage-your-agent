@@ -109,6 +109,7 @@ const edgeTypes: EdgeTypes = {
 const statusLabels: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
   'in_progress': 'In Progress',
+  'blocked': 'Blocked',
   'completed': 'Completed',
   'cancelled': 'Cancelled',
   'needsRefinment': 'Needs Refinement',

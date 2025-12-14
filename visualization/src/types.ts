@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Node, Edge as ReactFlowEdge } from 'reactflow';
 
 // Possible commit statuses
-export type CommitStatus = 'not_started' | 'in_progress' | 'completed' | 'cancelled' | 'needsRefinment' | 'user_review';
+export type CommitStatus = 'not_started' | 'in_progress' | 'blocked' | 'completed' | 'cancelled' | 'needsRefinment' | 'user_review';
 
 // Node data type definition
 export interface NodeData {

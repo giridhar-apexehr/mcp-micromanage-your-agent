@@ -94,6 +94,173 @@ header {
   width: 320px;
 }
 
+.filter-panel {
+  position: relative;
+  overflow: hidden;
+  color: var(--text-color);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 18px;
+  box-shadow:
+    0 22px 56px rgba(15, 23, 42, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.22) inset;
+  background:
+    radial-gradient(900px 300px at 18% 10%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(800px 240px at 70% 0%, rgba(99, 102, 241, 0.12), transparent 56%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.58));
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+.dark-mode .filter-panel {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.52),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  background:
+    radial-gradient(900px 300px at 20% 10%, rgba(96, 165, 250, 0.16), transparent 62%),
+    radial-gradient(800px 240px at 70% 0%, rgba(129, 140, 248, 0.10), transparent 56%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.70), rgba(17, 24, 39, 0.52));
+}
+
+.filter-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0) 45%),
+    radial-gradient(600px 220px at 18% 12%, rgba(255, 255, 255, 0.24), transparent 55%);
+  opacity: 0.9;
+}
+
+.dark-mode .filter-panel::before {
+  opacity: 0.55;
+}
+
+.filter-panel h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.filter-panel h3,
+.filter-panel .text-gray-800 {
+  color: var(--text-color);
+}
+
+.filter-panel label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(100, 116, 139, 1);
+}
+
+.dark-mode .filter-panel label {
+  color: rgba(203, 213, 225, 0.9);
+}
+
+.filter-panel select,
+.filter-panel input[type="text"] {
+  width: 100%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.34));
+  color: var(--text-color);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 10px 22px rgba(15, 23, 42, 0.10);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  padding: 8px 12px;
+  padding-left: 34px;
+  padding-right: 34px;
+}
+
+.dark-mode .filter-panel select,
+.dark-mode .filter-panel input[type="text"] {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 26px rgba(0, 0, 0, 0.36);
+}
+
+.filter-panel select:focus,
+.filter-panel select:focus-visible,
+.filter-panel input[type="text"]:focus,
+.filter-panel input[type="text"]:focus-visible {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.55);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.24),
+    0 14px 28px rgba(15, 23, 42, 0.12);
+}
+
+.filter-panel__close {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  line-height: 1;
+  border: 1px solid rgba(148, 163, 184, 0.30);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.40), rgba(255, 255, 255, 0.22));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 10px 20px rgba(15, 23, 42, 0.16);
+}
+
+.filter-panel__close:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.24) inset,
+    0 14px 26px rgba(15, 23, 42, 0.18);
+}
+
+.dark-mode .filter-panel__close:hover {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 16px 30px rgba(0, 0, 0, 0.44);
+}
+
+.dark-mode .filter-panel__close {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+}
+
+.filter-panel__reset {
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.24));
+  color: var(--text-color);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.22) inset,
+    0 12px 24px rgba(15, 23, 42, 0.14);
+}
+
+.filter-panel__reset:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.24) inset,
+    0 16px 30px rgba(15, 23, 42, 0.16);
+}
+
+.dark-mode .filter-panel__reset {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.06));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 16px 34px rgba(0, 0, 0, 0.46);
+}
+
 /* ノードとエッジのスタイル */
 .pr-node {
   border-radius: 8px;

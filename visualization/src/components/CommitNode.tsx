@@ -14,6 +14,7 @@ export interface CommitNodeData {
 const statusLabels: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
   'in_progress': 'In Progress',
+  'blocked': 'Blocked',
   'completed': 'Completed',
   'cancelled': 'Cancelled',
   'needsRefinment': 'Needs Refinement',
@@ -23,6 +24,7 @@ const statusLabels: Record<CommitStatus, string> = {
 const statusIcons: Record<CommitStatus, string> = {
   'not_started': '⚪',
   'in_progress': '🔵',
+  'blocked': '⛔',
   'completed': '✅',
   'cancelled': '❌',
   'needsRefinment': '🔄',
