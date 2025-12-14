@@ -24,6 +24,7 @@ import {
 import { useResponsiveFlowDimensions } from '../utils/responsiveUtils';
 import CommitNode from './CommitNode';
 import type { CommitNodeData } from './CommitNode';
+import PRNode from './PRNode';
 import { FilterOptions } from '../components/FilterPanel';
 import './nodes/nodes.css';
 
@@ -99,6 +100,7 @@ const CustomEdge = ({
 // Register custom node types
 const nodeTypes: NodeTypes = {
   commitNode: CommitNode,
+  prNode: PRNode,
 };
 
 // Register custom edge types
