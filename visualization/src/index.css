@@ -187,6 +187,23 @@ h1 {
   background-color: var(--filter-button-hover);
 }
 
+/* Ensure ReactFlow Controls render all buttons and icons correctly in dark mode */
+.react-flow__controls {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  overflow: visible;
+}
+
+.dark-mode .react-flow__controls-button {
+  background-color: var(--filter-button-bg);
+  color: var(--text-color);
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+
 .dark-mode .react-flow__background {
   background-color: var(--background-color);
 }
