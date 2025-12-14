@@ -7,37 +7,37 @@ import { FilterOptions } from '../components/FilterPanel';
 export const getStatusColor = (status: CommitStatus): string => {
   switch (status) {
     case 'completed':
-      return '#10b981'; // green
+      return 'var(--status-border-completed)';
     case 'in_progress':
-      return '#3b82f6'; // blue
+      return 'var(--status-border-in_progress)';
     case 'cancelled':
-      return '#6b7280'; // gray
+      return 'var(--status-border-cancelled)';
     case 'needsRefinment':
-      return '#f59e0b'; // orange
+      return 'var(--status-border-needsRefinment)';
     case 'user_review':
-      return '#9333ea'; // purple
+      return 'var(--status-border-user_review)';
     case 'not_started':
     default:
-      return '#94a3b8'; // light gray
+      return 'var(--status-border-not_started)';
   }
 };
 
 // Function to return background color based on status
-const getStatusBackgroundColor = (status: CommitStatus): string => {
+export const getStatusBackgroundColor = (status: CommitStatus): string => {
   switch (status) {
     case 'completed':
-      return '#d1fae5'; // light green
+      return 'var(--status-node-bg-completed)';
     case 'in_progress':
-      return '#dbeafe'; // light blue
+      return 'var(--status-node-bg-in_progress)';
     case 'cancelled':
-      return '#f3f4f6'; // light gray
+      return 'var(--status-node-bg-cancelled)';
     case 'needsRefinment':
-      return '#fef3c7'; // light orange
+      return 'var(--status-node-bg-needsRefinment)';
     case 'user_review':
-      return '#f3e8ff'; // light purple
+      return 'var(--status-node-bg-user_review)';
     case 'not_started':
     default:
-      return '#f1f5f9'; // light gray
+      return 'var(--status-node-bg-not_started)';
   }
 };
 
@@ -104,15 +104,15 @@ export interface LayoutOptions {
  */
 export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOptions) => {
   if (!workplan) return { nodes: [], edges: [] };
-  
+
   // Initialize arrays for nodes and edges
   const nodes: ExtendedNode<NodeData | CommitNodeData>[] = [];
   const edges: Edge[] = [];
-  
+
   // Apply spacing and padding factors
   const spacing = options?.nodeSpacing ?? 1;
   const padding = options?.nodePadding ?? 1;
-  
+
   // Calculate responsive layout values
   const layout = {
     HORIZONTAL_SPACING: DEFAULT_LAYOUT.HORIZONTAL_SPACING * spacing,
@@ -123,20 +123,20 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
     COMMIT_HORIZONTAL_OFFSET: DEFAULT_LAYOUT.COMMIT_HORIZONTAL_OFFSET * spacing,
     INITIAL_X: DEFAULT_LAYOUT.INITIAL_X * spacing,
   };
-  
+
   // Generate PR nodes and commit nodes
   workplan.prPlans.forEach((pr, prIndex) => {
     // PR node
     const prId = `pr-${prIndex}`;
     const prStatus = getOverallStatus(pr.commitPlans.map(commit => commit.status));
-    
+
     const prNode: ExtendedNode<NodeData | CommitNodeData> = {
       id: prId,
       type: 'default',
-      className: 'pr-node',
-      position: { 
-        x: layout.INITIAL_X + layout.HORIZONTAL_SPACING * prIndex, 
-        y: layout.VERTICAL_CENTER 
+      className: `pr-node status-${prStatus}`,
+      position: {
+        x: layout.INITIAL_X + layout.HORIZONTAL_SPACING * prIndex,
+        y: layout.VERTICAL_CENTER
       },
       data: {
         label: pr.goal,
@@ -148,16 +148,13 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
       },
       style: {
         width: layout.PR_WIDTH,
-        backgroundColor: getStatusBackgroundColor(prStatus),
-        borderColor: getStatusColor(prStatus),
-        borderWidth: 2,
       },
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
     };
-    
+
     nodes.push(prNode);
-    
+
     // Connect to previous PR (for second and subsequent PRs)
     if (prIndex > 0) {
       edges.push({
@@ -167,28 +164,26 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
         animated: false,
         sourceHandle: 'right',
         targetHandle: 'left',
-        style: {
-          stroke: '#aaa',
-          strokeWidth: 2,
-        },
+        className: 'edge-neutral',
       });
     }
-    
+
     // Commit node
     pr.commitPlans.forEach((commit, commitIndex) => {
       const commitId = `commit-${prIndex}-${commitIndex}`;
       const commitStatus = commit.status || 'not_started';
-      
+
       // Calculate commit vertical position (spread out from PR center)
       const verticalOffset = (commitIndex - (pr.commitPlans.length - 1) / 2) * (layout.COMMIT_HEIGHT * 1.5);
-      
+
       // Commit node
       const commitNode: ExtendedNode<CommitNodeData> = {
         id: commitId,
         type: 'commitNode',
-        position: { 
-          x: layout.INITIAL_X + layout.HORIZONTAL_SPACING * prIndex + layout.COMMIT_HORIZONTAL_OFFSET, 
-          y: layout.VERTICAL_CENTER + verticalOffset 
+        className: `status-${commitStatus}`,
+        position: {
+          x: layout.INITIAL_X + layout.HORIZONTAL_SPACING * prIndex + layout.COMMIT_HORIZONTAL_OFFSET,
+          y: layout.VERTICAL_CENTER + verticalOffset
         },
         data: {
           title: commit.goal,
@@ -199,15 +194,14 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
           developerNote: commit.developerNote
         },
         style: {
-          borderColor: getStatusColor(commitStatus),
           width: layout.COMMIT_WIDTH,
         },
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
       };
-      
+
       nodes.push(commitNode);
-      
+
       // Connect commit to PR
       edges.push({
         id: `${prId}-to-${commitId}`,
@@ -217,12 +211,12 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
         sourceHandle: 'right',
         targetHandle: 'left',
         label: `Commit ${commitIndex + 1}`,
-        style: {
-          stroke: getStatusColor(commitStatus),
-          strokeWidth: 2,
+        className: `status-${commitStatus}`,
+        data: {
+          status: commitStatus,
         },
       });
-      
+
       // If there's a next PR, add edge from final commit to next PR
       if (prIndex < workplan.prPlans.length - 1 && commitIndex === pr.commitPlans.length - 1) {
         edges.push({
@@ -233,15 +227,14 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
           sourceHandle: 'right',
           targetHandle: 'left',
           style: {
-            stroke: '#aaa',
-            strokeWidth: 2,
             strokeDasharray: '5, 5',
           },
+          className: 'edge-neutral',
         });
       }
     });
   });
-  
+
   return { nodes, edges };
 };
 

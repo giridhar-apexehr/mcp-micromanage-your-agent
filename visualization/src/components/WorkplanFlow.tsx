@@ -43,8 +43,9 @@ const CustomEdge = ({
   style = {},
   data,
   markerEnd,
-  animated
-}: EdgeProps) => {
+  animated,
+  className
+}: EdgeProps & { className?: string }) => {
   // Adjust connection point calculation
   // Ensure targetPosition is set to Position.Left
   const targetPos = targetPosition || Position.Left;
@@ -68,10 +69,9 @@ const CustomEdge = ({
         style={{
           ...style,
           strokeWidth: style.strokeWidth || 2,
-          stroke: style.stroke || '#555',
           transition: 'stroke 0.3s, stroke-width 0.3s',
         }}
-        className={`react-flow__edge-path ${animated ? 'animated' : ''}`}
+        className={`react-flow__edge-path ${animated ? 'animated' : ''} ${className || ''}`}
         d={edgePath}
         markerEnd={markerEnd}
       />
@@ -81,7 +81,6 @@ const CustomEdge = ({
           y={labelY}
           style={{
             fontSize: '10px',
-            fill: '#666',
             textAnchor: 'middle',
             dominantBaseline: 'middle',
             pointerEvents: 'none',
@@ -173,10 +172,10 @@ const WorkplanFlow = ({
     return initialEdges.map(edge => ({
       ...edge,
       type: 'custom',
-      data: { label: edge.label },
+      data: { ...edge.data, label: edge.label },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: edge.style?.stroke || '#555',
+        color: 'currentColor',
       },
     }));
   }, [initialEdges]);
@@ -194,7 +193,7 @@ const WorkplanFlow = ({
   const [selectedNode, setSelectedNode] = useState<ExtendedNode<NodeData> | null>(null);
 
   // Handler for node selection
-  const onNodeClick = useCallback((event: React.MouseEvent, node: ExtendedNode) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: ExtendedNode) => {
     setSelectedNode(node as ExtendedNode<NodeData>);
   }, []);
   
