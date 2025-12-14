@@ -29,6 +29,18 @@
   --status-blocked-bg: #fff7ed;
   --status-needs-refinement-bg: #fdf4ff;
   --status-user-review-bg: #f3e8ff;
+  --status-node-bg-not_started: var(--status-not-started-bg);
+  --status-node-bg-in_progress: var(--status-in-progress-bg);
+  --status-node-bg-completed: var(--status-completed-bg);
+  --status-node-bg-cancelled: var(--status-cancelled-bg);
+  --status-node-bg-needsRefinment: var(--status-needs-refinement-bg);
+  --status-node-bg-user_review: var(--status-user-review-bg);
+  --status-border-not_started: #94a3b8;
+  --status-border-in_progress: #3b82f6;
+  --status-border-completed: #10b981;
+  --status-border-cancelled: #ef4444;
+  --status-border-needsRefinment: #f59e0b;
+  --status-border-user_review: #9333ea;
   --input-bg: #ffffff;
   --input-border: #e2e8f0;
   --input-focus-border: #3b82f6;
@@ -62,6 +74,18 @@
   --status-blocked-bg: #783c00;
   --status-needs-refinement-bg: #701a75;
   --status-user-review-bg: #701a75;
+  --status-node-bg-not_started: var(--status-not-started-bg);
+  --status-node-bg-in_progress: var(--status-in-progress-bg);
+  --status-node-bg-completed: var(--status-completed-bg);
+  --status-node-bg-cancelled: var(--status-cancelled-bg);
+  --status-node-bg-needsRefinment: var(--status-needs-refinement-bg);
+  --status-node-bg-user_review: var(--status-user-review-bg);
+  --status-border-not_started: #9ca3af;
+  --status-border-in_progress: #60a5fa;
+  --status-border-completed: #34d399;
+  --status-border-cancelled: #f87171;
+  --status-border-needsRefinment: #fbbf24;
+  --status-border-user_review: #c084fc;
   --input-bg: #4a5568;
   --input-border: #64748b;
   --input-focus-border: #60a5fa;
@@ -191,11 +215,6 @@ button:focus-visible {
   fill: var(--panel-bg);
 }
 
-.dark-mode .react-flow__minimap-node {
-  fill: var(--node-bg);
-  stroke: var(--node-border);
-}
-
 /* コンポーネントのダークモード対応 */
 .dark-mode button {
   background-color: var(--button-secondary-bg);
@@ -238,9 +257,9 @@ button:focus-visible {
   background-color: var(--start-node-bg);
 }
 
-.dark-mode .pr-node {
+/* .dark-mode .pr-node {
   background-color: var(--pr-node-bg);
-}
+} */
 
 .dark-mode .commit-node {
   background-color: var(--commit-node-bg);

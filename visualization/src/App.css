@@ -75,6 +75,14 @@ header {
   position: relative;
 }
 
+.app header button {
+  color: white;
+}
+
+.app header button svg {
+  color: inherit;
+}
+
 /* フィルターパネルのスタイル */
 .filter-panel-container {
   position: absolute;
@@ -166,26 +174,4 @@ header {
 .filter-panel-container > div,
 .export-panel-container > div {
   animation: fadeIn 0.3s ease-out;
-}
-
-/* ダークモードサポート */
-@media (prefers-color-scheme: dark) {
-  .react-flow__node {
-    color: #f1f5f9;
-  }
-  
-  .react-flow__node.start-node {
-    background-color: #1e3a8a;
-    border-color: #3b82f6;
-  }
-  
-  .react-flow__node.pr-node {
-    background-color: #1f2937;
-    border-color: #4b5563;
-  }
-  
-  .commit-node {
-    background-color: #374151;
-    border-color: #6b7280;
-  }
 }
