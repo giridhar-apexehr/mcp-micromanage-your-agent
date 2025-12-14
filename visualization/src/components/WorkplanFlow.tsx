@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import ReactFlow, {
   MiniMap,
-  Controls,
   Background,
   useNodesState,
   useEdgesState,
@@ -13,6 +12,9 @@ import ReactFlow, {
   EdgeProps,
   MarkerType,
   Position,
+  useReactFlow,
+  useStore,
+  useStoreApi,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { WorkPlan, NodeData, ExtendedNode, CommitStatus } from '../types';
@@ -27,6 +29,8 @@ import type { CommitNodeData } from './CommitNode';
 import PRNode from './PRNode';
 import { FilterOptions } from '../components/FilterPanel';
 import './nodes/nodes.css';
+
+import { Lock, Maximize2, Minus, Plus, Unlock } from 'lucide-react';
 
 export interface WorkplanFlowProps {
   workplan: WorkPlan;
@@ -108,6 +112,19 @@ const edgeTypes: EdgeTypes = {
   custom: CustomEdge,
 };
 
+const selectInteractivity = (s: {
+  nodesDraggable: boolean;
+  nodesConnectable: boolean;
+  elementsSelectable: boolean;
+  transform: [number, number, number];
+  minZoom: number;
+  maxZoom: number;
+}) => ({
+  isInteractive: s.nodesDraggable || s.nodesConnectable || s.elementsSelectable,
+  minZoomReached: s.transform[2] <= s.minZoom,
+  maxZoomReached: s.transform[2] >= s.maxZoom,
+});
+
 // Status label definitions
 const statusLabels: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
@@ -151,11 +168,48 @@ const WorkplanFlow = ({
   
   // Get responsive settings
   const {
+    nodePadding,
+    nodeSpacing,
     miniMapVisible,
     controlsStyle,
     miniMapStyle,
     currentBreakpoint
   } = useResponsiveFlowDimensions();
+
+  // FitView options based on current breakpoint
+  const fitViewOptions = useMemo(() => ({
+    padding: currentBreakpoint === 'xs' ? 0.1 : 
+             currentBreakpoint === 'sm' ? 0.15 : 0.2,
+    maxZoom: 1.5,
+    includeHiddenNodes: false,
+    minZoom: 0.2,
+    alignmentX: 0.5,  // Horizontal center
+    alignmentY: 0,    // Top alignment
+  }), [currentBreakpoint]);
+
+  const { zoomIn, zoomOut, fitView } = useReactFlow();
+  const store = useStoreApi();
+  const { isInteractive, minZoomReached, maxZoomReached } = useStore(selectInteractivity);
+
+  const handleZoomIn = useCallback(() => {
+    zoomIn();
+  }, [zoomIn]);
+
+  const handleZoomOut = useCallback(() => {
+    zoomOut();
+  }, [zoomOut]);
+
+  const handleFitView = useCallback(() => {
+    fitView(fitViewOptions);
+  }, [fitView, fitViewOptions]);
+
+  const handleToggleInteractivity = useCallback(() => {
+    store.setState({
+      nodesDraggable: !isInteractive,
+      nodesConnectable: !isInteractive,
+      elementsSelectable: !isInteractive,
+    });
+  }, [isInteractive, store]);
   
   // Use provided filter options or default
   const activeFilterOptions = filterOptions || defaultFilterOptions;
@@ -167,8 +221,8 @@ const WorkplanFlow = ({
 
   // Set initial nodes and edges (generated from filtered workplan)
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    return convertWorkPlanToFlow(filteredWorkplan);
-  }, [filteredWorkplan]);
+    return convertWorkPlanToFlow(filteredWorkplan, { nodePadding, nodeSpacing });
+  }, [filteredWorkplan, nodePadding, nodeSpacing]);
   
   // Add callbacks to commit nodes
   const nodesWithCallbacks = useMemo(() => {
@@ -241,17 +295,6 @@ const WorkplanFlow = ({
   
   // Flow component style
   const proOptions = { hideAttribution: true };
-
-  // FitView options based on current breakpoint
-  const fitViewOptions = useMemo(() => ({
-    padding: currentBreakpoint === 'xs' ? 0.1 : 
-             currentBreakpoint === 'sm' ? 0.15 : 0.2,
-    maxZoom: 1.5,
-    includeHiddenNodes: false,
-    minZoom: 0.2,
-    alignmentX: 0.5,  // Horizontal center
-    alignmentY: 0,    // Top alignment
-  }), [currentBreakpoint]);
 
   // Initial viewport settings
   const defaultViewport = { x: 0, y: 0, zoom: 1 };
@@ -327,8 +370,50 @@ const WorkplanFlow = ({
           />
         )}
         
-        {/* Controls - responsive */}
-        <Controls position="bottom-right" style={controlsStyle} showZoom showFitView showInteractive />
+        <Panel position="bottom-right" style={controlsStyle} className="react-flow__controls" aria-label="Viewport controls">
+          <button
+            type="button"
+            className="react-flow__controls-button react-flow__controls-zoomin"
+            onClick={handleZoomIn}
+            aria-label="zoom in"
+            title="zoom in"
+            disabled={maxZoomReached}
+          >
+            <Plus size={14} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="react-flow__controls-button react-flow__controls-zoomout"
+            onClick={handleZoomOut}
+            aria-label="zoom out"
+            title="zoom out"
+            disabled={minZoomReached}
+          >
+            <Minus size={14} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="react-flow__controls-button react-flow__controls-fitview"
+            onClick={handleFitView}
+            aria-label="fit view"
+            title="fit view"
+          >
+            <Maximize2 size={14} strokeWidth={2} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="react-flow__controls-button react-flow__controls-interactive"
+            onClick={handleToggleInteractivity}
+            aria-label="toggle interactivity"
+            title="toggle interactivity"
+          >
+            {isInteractive ? (
+              <Unlock size={14} strokeWidth={2} aria-hidden="true" />
+            ) : (
+              <Lock size={14} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+        </Panel>
         
         <Background
           variant={BackgroundVariant.Dots}
