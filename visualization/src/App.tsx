@@ -4,6 +4,7 @@ import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { WorkPlan, CommitStatus } from './types'
+import { Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
 
 function App() {
@@ -180,8 +181,8 @@ function App() {
       return () => mediaQuery.removeEventListener('change', handleChange);
     }
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
   }, [themeMode]);
 
   // Filter options change handler
@@ -256,10 +257,11 @@ function App() {
                 type="button"
               >
                 <span className="morphic-btn__icon" aria-hidden="true">
-                  <svg className={`morphic-icon ${pollingEnabled ? 'is-spinning' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
-                    <path d="M21 3v5h-5"></path>
-                  </svg>
+                  <RotateCw
+                    className={`morphic-icon ${pollingEnabled ? 'is-spinning' : ''}`}
+                    size={18}
+                    strokeWidth={2}
+                  />
                 </span>
                 <span className="morphic-btn__label">Auto</span>
                 <span className={`morphic-dot ${pollingEnabled ? 'is-on' : 'is-off'}`} aria-hidden="true" />
@@ -279,21 +281,12 @@ function App() {
                 type="button"
               >
                 <span className="morphic-btn__icon" aria-hidden="true">
-                  <svg
+                  <RefreshCw
                     key={refreshSpinTick}
                     className={`morphic-icon ${refreshSpinTick > 0 ? 'morphic-icon--spin-once' : ''}`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="1 4 1 10 7 10"></polyline>
-                    <polyline points="23 20 23 14 17 14"></polyline>
-                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-                  </svg>
+                    size={18}
+                    strokeWidth={2}
+                  />
                 </span>
                 <span className="morphic-btn__label">Refresh</span>
               </button>
@@ -307,21 +300,13 @@ function App() {
               >
                 <span className="morphic-btn__icon" aria-hidden="true">
                   {themeMode === 'light' && (
-                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                    </svg>
+                    <Sun className="morphic-icon" size={18} strokeWidth={2} />
                   )}
                   {themeMode === 'dark' && (
-                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                    </svg>
+                    <Moon className="morphic-icon" size={18} strokeWidth={2} />
                   )}
                   {themeMode === 'system' && (
-                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="4" width="18" height="12" rx="2" ry="2" />
-                      <line x1="8" y1="20" x2="16" y2="20" />
-                      <line x1="12" y1="16" x2="12" y2="20" />
-                    </svg>
+                    <Monitor className="morphic-icon" size={18} strokeWidth={2} />
                   )}
                 </span>
               </button>
@@ -333,9 +318,7 @@ function App() {
                 type="button"
               >
                 <span className="morphic-btn__icon" aria-hidden="true">
-                  <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                  </svg>
+                  <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
                 </span>
                 <span className="morphic-btn__label">Filter</span>
               </button>

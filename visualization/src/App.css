@@ -496,7 +496,7 @@ header {
 
 @keyframes morphic-spin-once {
   from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  to { transform: rotate(180deg); }
 }
 
 @keyframes morphic-pulse {
