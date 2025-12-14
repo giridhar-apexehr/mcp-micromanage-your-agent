@@ -75,11 +75,11 @@ header {
   position: relative;
 }
 
-.app header button {
-  color: white;
+.app-topbar button {
+  color: inherit;
 }
 
-.app header button svg {
+.app-topbar button svg {
   color: inherit;
 }
 
@@ -135,20 +135,18 @@ header {
 
 /* レスポンシブデザイン */
 @media (max-width: 768px) {
-  header {
+  .app-topbar {
+    padding: 10px 12px;
+  }
+  
+  .topbar-inner {
     flex-direction: column;
+    align-items: stretch;
     gap: 10px;
-    align-items: flex-start;
-    padding: 10px;
   }
   
-  header h1 {
-    font-size: 1.5rem;
-  }
-  
-  header .flex {
-    flex-wrap: wrap;
-    gap: 8px;
+  .topbar-actions {
+    justify-content: flex-end;
   }
   
   .filter-panel-container {
@@ -156,6 +154,28 @@ header {
     left: 10px;
     width: calc(100% - 20px);
     max-width: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar-meta {
+    display: none;
+  }
+
+  .topbar-subtitle {
+    max-width: 100%;
+  }
+
+  .morphic-btn {
+    padding: 8px;
+  }
+
+  .morphic-btn__label {
+    display: none;
+  }
+
+  .morphic-divider {
+    display: none;
   }
 }
 
@@ -174,4 +194,333 @@ header {
 .filter-panel-container > div,
 .export-panel-container > div {
   animation: fadeIn 0.3s ease-out;
+}
+
+.app-topbar {
+  position: relative;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background:
+    radial-gradient(1200px 60px at 50% 0%, rgba(59, 130, 246, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.62));
+}
+
+.dark-mode .app-topbar {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    radial-gradient(1200px 60px at 50% 0%, rgba(96, 165, 250, 0.10), transparent 70%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.72), rgba(17, 24, 39, 0.56));
+}
+
+.topbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.topbar-brand {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbar-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.72);
+}
+
+.dark-mode .topbar-title {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.topbar-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.92);
+  max-width: min(720px, 58vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark-mode .topbar-subtitle {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topbar-meta {
+  font-size: 12px;
+  color: rgba(51, 65, 85, 0.85);
+  white-space: nowrap;
+}
+
+.dark-mode .topbar-meta {
+  color: rgba(203, 213, 225, 0.80);
+}
+
+.morphic-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(165%);
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.06) inset;
+}
+
+.dark-mode .morphic-bar {
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(15, 23, 42, 0.30);
+  backdrop-filter: blur(18px) saturate(175%);
+  -webkit-backdrop-filter: blur(18px) saturate(175%);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.40) inset;
+}
+
+.morphic-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(59, 130, 246, 0.12), transparent 62%);
+  pointer-events: none;
+}
+
+.morphic-bar::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  top: -45%;
+  width: 140%;
+  height: 120%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.00) 45%);
+  transform: rotate(6deg);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.dark-mode .morphic-bar::before {
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(226, 232, 240, 0.16), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(96, 165, 250, 0.10), transparent 62%);
+}
+
+.dark-mode .morphic-bar::after {
+  opacity: 0.20;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.18), rgba(226, 232, 240, 0.00) 45%);
+}
+
+.morphic-divider {
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.45), transparent);
+  margin: 0 2px;
+}
+
+.dark-mode .morphic-divider {
+  background: linear-gradient(180deg, transparent, rgba(148, 163, 184, 0.25), transparent);
+}
+
+.morphic-btn {
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  padding: 8px 10px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.92);
+  cursor: pointer;
+  position: relative;
+  transform: translateZ(0);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.dark-mode .morphic-btn {
+  color: rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.28);
+}
+
+.morphic-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background:
+    radial-gradient(160px 50px at 18% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(148, 163, 184, 0.06));
+  opacity: 0.65;
+  transition: opacity 160ms ease;
+}
+
+.dark-mode .morphic-btn::before {
+  background:
+    radial-gradient(160px 50px at 18% 0%, rgba(226, 232, 240, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(226, 232, 240, 0.10), rgba(148, 163, 184, 0.04));
+}
+
+.morphic-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.morphic-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow:
+    0 14px 24px rgba(15, 23, 42, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+.morphic-btn:hover::before {
+  opacity: 0.95;
+}
+
+.morphic-btn:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.morphic-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.morphic-btn__icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.morphic-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.morphic-btn--primary {
+  color: white;
+}
+
+.morphic-btn--primary::before {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.92));
+}
+
+.dark-mode .morphic-btn--primary::before {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.92), rgba(29, 78, 216, 0.92));
+}
+
+.morphic-btn--primary:hover {
+  box-shadow: 0 12px 22px rgba(37, 99, 235, 0.20);
+}
+
+.morphic-btn--quiet {
+  padding-right: 8px;
+}
+
+.morphic-btn--icon {
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  justify-content: center;
+}
+
+.morphic-btn--icon .morphic-btn__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.morphic-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  background: rgba(148, 163, 184, 0.8);
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
+}
+
+.morphic-dot.is-on {
+  background: rgba(34, 197, 94, 0.95);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.morphic-dot.is-off {
+  background: rgba(148, 163, 184, 0.9);
+  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.14);
+}
+
+@keyframes morphic-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes morphic-spin-once {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes morphic-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.15); opacity: 0.7; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .morphic-icon.is-spinning {
+    animation: morphic-spin 1.2s linear infinite;
+  }
+
+  .morphic-icon--spin-once {
+    animation: morphic-spin-once 500ms ease-out 1;
+  }
+
+  .morphic-dot.is-on {
+    animation: morphic-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .morphic-btn,
+  .morphic-btn::before {
+    transition: none;
+  }
 }

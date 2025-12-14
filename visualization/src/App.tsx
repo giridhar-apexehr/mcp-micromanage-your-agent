@@ -4,23 +4,21 @@ import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { WorkPlan, CommitStatus } from './types'
-import { useBreakpoint } from './utils/responsiveUtils'
 import './App.css'
 
 function App() {
-  // Get breakpoint
-  const breakpoint = useBreakpoint();
-  
   // Initialize with normalized sample data
   const [workplan, setWorkplan] = useState<WorkPlan | null>(null);
   const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Polling interval (milliseconds)
-  const [pollingInterval, setPollingInterval] = useState<number>(5000); // Default: 1 second
+  const [pollingInterval] = useState<number>(5000); // Default: 1 second
   // Whether polling is enabled
   const [pollingEnabled, setPollingEnabled] = useState<boolean>(true);
   // Loading flag
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const isLoadingRef = useRef<boolean>(false);
+  const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0);
   // Track last polling attempt
   const pollingTimeoutRef = useRef<number | null>(null);
   
@@ -31,21 +29,33 @@ function App() {
     onlyShowActive: false
   });
   
-  // Dark mode state
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    // Load settings from localStorage
-    const savedMode = localStorage.getItem('darkMode');
-    // Check system color scheme settings
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // Use saved settings if available, otherwise follow system settings
-    return savedMode !== null ? savedMode === 'true' : prefersDark;
+  type ThemeMode = 'system' | 'light' | 'dark';
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    const savedThemeMode = localStorage.getItem('themeMode');
+    if (savedThemeMode === 'system' || savedThemeMode === 'light' || savedThemeMode === 'dark') {
+      return savedThemeMode;
+    }
+
+    const legacyDarkMode = localStorage.getItem('darkMode');
+    if (legacyDarkMode !== null) {
+      return legacyDarkMode === 'true' ? 'dark' : 'light';
+    }
+
+    return 'system';
   });
+
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() =>
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+
+  const isDarkMode = themeMode === 'dark' ? true : themeMode === 'light' ? false : systemPrefersDark;
 
   // Separate data loading function for reusability
   const loadData = useCallback(async () => {
-    if (isLoading) return; // Do nothing if already loading
+    if (isLoadingRef.current) return; // Do nothing if already loading
     
+    isLoadingRef.current = true;
     setIsLoading(true);
     try {
       // Get JSON file directly (add timestamp parameter to avoid cache)
@@ -103,9 +113,10 @@ function App() {
       console.error('Error occurred while loading data:', error);
       setLoadError('Failed to load data.');
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, []); // Empty dependency array
+  }, []);
 
   // Get data from JSON file on initial load
   useEffect(() => {
@@ -143,7 +154,7 @@ function App() {
     };
   }, [loadData, pollingEnabled, pollingInterval]);
   
-  // Add/remove class from html tag when dark mode setting changes
+  // Add/remove class from html tag when theme setting changes
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark-mode');
@@ -151,9 +162,27 @@ function App() {
       document.documentElement.classList.remove('dark-mode');
     }
     
-    // Save settings to localStorage
-    localStorage.setItem('darkMode', isDarkMode.toString());
-  }, [isDarkMode]);
+    localStorage.setItem('themeMode', themeMode);
+  }, [isDarkMode, themeMode]);
+
+  useEffect(() => {
+    if (themeMode !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setSystemPrefersDark(event.matches);
+    };
+
+    setSystemPrefersDark(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    }
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [themeMode]);
 
   // Filter options change handler
   const handleFilterChange = useCallback((newOptions: FilterOptions) => {
@@ -165,9 +194,12 @@ function App() {
     setShowFilterPanel(true);
   }, []);
   
-  // Dark mode toggle handler
-  const toggleDarkMode = useCallback(() => {
-    setIsDarkMode(prev => !prev);
+  const toggleThemeMode = useCallback(() => {
+    setThemeMode((prev) => {
+      if (prev === 'system') return 'dark';
+      if (prev === 'dark') return 'light';
+      return 'system';
+    });
   }, []);
 
   // Polling settings toggle handler
@@ -200,88 +232,115 @@ function App() {
 
   return (
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
-      <header className={`bg-gray-800 text-white shadow-md flex justify-between items-center ${
-        breakpoint === 'xs' ? 'p-2' : 'p-4'
-      }`}>
-        <div>
-          {/* Currently unused area - available for future use */}
-        </div>
-        
-        <div className="flex items-center gap-2 sm:gap-4">
-          {lastLoadedTime && (
-            <span className={`text-gray-300 ${breakpoint === 'xs' ? 'text-xs' : 'text-sm'} hidden sm:inline`}>
-              Last updated: {lastLoadedTime.toLocaleTimeString()}
-            </span>
-          )}
-          
-          {/* Polling toggle button */}
-          <button 
-            onClick={togglePolling}
-            className={`px-1 py-0.5 ${pollingEnabled ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-500'} rounded-sm text-white transition flex items-center text-xs`}
-            title={pollingEnabled ? "Stop auto-refresh" : "Start auto-refresh"}
-            aria-label={pollingEnabled ? "Stop auto-refresh" : "Start auto-refresh"}
-          >
-            <svg className={`h-2.5 w-2.5 ${pollingEnabled ? 'animate-spin' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
-              <path d="M21 3v5h-5"></path>
-            </svg>
-            <span className="hidden sm:inline text-xs ml-0.5">{pollingEnabled ? 'Auto ON' : 'Auto OFF'}</span>
-          </button>
-          
-          {/* Manual refresh button */}
-          <button 
-            onClick={() => loadData()}
-            disabled={isLoading}
-            className={`px-2 sm:px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 rounded text-white transition flex items-center ${
-              breakpoint === 'xs' ? 'text-xs' : 'text-sm'
-            }`}
-            title="Refresh now"
-            aria-label="Refresh now"
-          >
-            <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="1 4 1 10 7 10"></polyline>
-              <polyline points="23 20 23 14 17 14"></polyline>
-              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-            </svg>
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-          
-          {/* Dark mode toggle button */}
-          <button 
-            onClick={toggleDarkMode}
-            className={`px-2 sm:px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white transition flex items-center ${
-              breakpoint === 'xs' ? 'text-xs' : 'text-sm'
-            }`}
-            title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDarkMode ? (
-              <>
-                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                </svg>
-                <span className="hidden sm:inline">Light</span>
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-                <span className="hidden sm:inline">Dark</span>
-              </>
+      <header className="app-topbar">
+        <div className="topbar-inner">
+          <div className="topbar-brand">
+            {/* Currently unused area - available for future use */}
+            <div className="topbar-title">Workplan</div>
+            <div className="topbar-subtitle" title={workplan.goal}>{workplan.goal}</div>
+          </div>
+
+          <div className="topbar-actions">
+            {lastLoadedTime && (
+              <span className="topbar-meta">
+                Updated {lastLoadedTime.toLocaleTimeString()}
+              </span>
             )}
-          </button>
-          
-          <button 
-            onClick={handleFilterClick}
-            className={`px-2 sm:px-3 py-1 bg-indigo-600 hover:bg-indigo-700 rounded text-white transition ${
-              breakpoint === 'xs' ? 'text-xs' : 'text-sm'
-            }`}
-            aria-label="Open filter"
-          >
-            <span className="mr-1">🔍</span>
-            {breakpoint !== 'xs' && "Filter"}
-          </button>
+
+            <div className="morphic-bar" role="group" aria-label="Actions">
+              <button
+                onClick={togglePolling}
+                className={`morphic-btn morphic-btn--quiet ${pollingEnabled ? 'is-on' : 'is-off'}`}
+                title={pollingEnabled ? "Stop auto-refresh" : "Start auto-refresh"}
+                aria-label={pollingEnabled ? "Stop auto-refresh" : "Start auto-refresh"}
+                type="button"
+              >
+                <span className="morphic-btn__icon" aria-hidden="true">
+                  <svg className={`morphic-icon ${pollingEnabled ? 'is-spinning' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                    <path d="M21 3v5h-5"></path>
+                  </svg>
+                </span>
+                <span className="morphic-btn__label">Auto</span>
+                <span className={`morphic-dot ${pollingEnabled ? 'is-on' : 'is-off'}`} aria-hidden="true" />
+              </button>
+
+              <div className="morphic-divider" aria-hidden="true" />
+
+              <button
+                onClick={() => {
+                  setRefreshSpinTick((prev) => prev + 1);
+                  loadData();
+                }}
+                disabled={isLoading}
+                className="morphic-btn"
+                title="Refresh now"
+                aria-label="Refresh now"
+                type="button"
+              >
+                <span className="morphic-btn__icon" aria-hidden="true">
+                  <svg
+                    key={refreshSpinTick}
+                    className={`morphic-icon ${refreshSpinTick > 0 ? 'morphic-icon--spin-once' : ''}`}
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="1 4 1 10 7 10"></polyline>
+                    <polyline points="23 20 23 14 17 14"></polyline>
+                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+                  </svg>
+                </span>
+                <span className="morphic-btn__label">Refresh</span>
+              </button>
+
+              <button
+                onClick={toggleThemeMode}
+                className="morphic-btn morphic-btn--icon"
+                title={`Theme: ${themeMode.charAt(0).toUpperCase()}${themeMode.slice(1)} (click to change)`}
+                aria-label={`Theme: ${themeMode}. Click to change.`}
+                type="button"
+              >
+                <span className="morphic-btn__icon" aria-hidden="true">
+                  {themeMode === 'light' && (
+                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {themeMode === 'dark' && (
+                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                    </svg>
+                  )}
+                  {themeMode === 'system' && (
+                    <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="4" width="18" height="12" rx="2" ry="2" />
+                      <line x1="8" y1="20" x2="16" y2="20" />
+                      <line x1="12" y1="16" x2="12" y2="20" />
+                    </svg>
+                  )}
+                </span>
+              </button>
+
+              <button
+                onClick={handleFilterClick}
+                className="morphic-btn morphic-btn--primary"
+                aria-label="Open filter"
+                type="button"
+              >
+                <span className="morphic-btn__icon" aria-hidden="true">
+                  <svg className="morphic-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <span className="morphic-btn__label">Filter</span>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
       
