@@ -196,6 +196,10 @@ header {
   padding: 8px 12px;
   padding-left: 34px;
   padding-right: 34px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -327,8 +331,17 @@ header {
   padding: 10px 12px;
   border-radius: 12px;
   color: var(--text-color);
+  background: transparent;
+  background-color: transparent;
   border: 1px solid transparent;
   transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+/* Prevent global dark-mode button styles from leaking into the dropdown menu items */
+.dark-mode .filter-panel .filter-panel__menu-item {
+  background: transparent;
+  background-color: transparent;
+  color: var(--text-color);
 }
 
 .filter-panel__menu-item:hover,
