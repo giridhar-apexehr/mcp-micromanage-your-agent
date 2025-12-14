@@ -129,8 +129,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       
       <div className="space-y-4">
         {/* Status filter */}
-        <div className="transition-all duration-200 hover:shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="filter-panel__field">
+          <label className="filter-panel__label block text-sm font-medium text-gray-700 mb-1">
             Status
           </label>
           <div className="relative">
@@ -141,11 +141,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             >
               {STATUS_OPTIONS}
             </select>
-            <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+            <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
               {STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all']}
             </div>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <div className="filter-panel__field-suffix absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400 filter-panel__chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </div>
@@ -153,8 +153,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
         
         {/* Search filter */}
-        <div className="transition-all duration-200 hover:shadow-sm">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="filter-panel__field">
+          <label className="filter-panel__label block text-sm font-medium text-gray-700 mb-1">
             Search
           </label>
           <div className="relative">
@@ -165,7 +165,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               placeholder="Search in commit content..."
               className="w-full p-2 pl-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+            <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
               </svg>
@@ -173,7 +173,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             {localOptions.searchQuery && (
               <button
                 onClick={() => handleChange('searchQuery', '')}
-                className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
+                className="filter-panel__icon-btn absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
                 aria-label="Clear search"
               >
                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -185,18 +185,17 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </div>
         
         {/* Show only active items */}
-        <div className="flex items-center p-2 hover:bg-gray-50 rounded-md transition-colors">
+        <label className="filter-panel__toggle" htmlFor="onlyActive">
           <input
             type="checkbox"
             id="onlyActive"
             checked={localOptions.onlyShowActive}
             onChange={(e) => handleChange('onlyShowActive', e.target.checked)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+            className="filter-panel__checkbox"
           />
-          <label htmlFor="onlyActive" className="ml-2 block text-sm text-gray-700">
-            Show only active tasks
-          </label>
-        </div>
+          <span className="filter-panel__check" aria-hidden="true" />
+          <span className="filter-panel__toggle-label">Show only active tasks</span>
+        </label>
         
         {/* Filter badge display */}
         {(localOptions.statusFilter !== 'all' || 
@@ -206,12 +205,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             <p className="w-full text-xs text-gray-500 mb-1">Active filters:</p>
             
             {localOptions.statusFilter !== 'all' && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="filter-panel__chip filter-panel__chip--blue inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 {STATUS_ICONS[localOptions.statusFilter as CommitStatus]}
                 <span className="ml-1">{STATUS_LABELS[localOptions.statusFilter as CommitStatus]}</span>
                 <button
                   onClick={() => handleChange('statusFilter', 'all')}
-                  className="ml-1 text-blue-500 hover:text-blue-700"
+                  className="filter-panel__chip-close ml-1 text-blue-500 hover:text-blue-700"
                 >
                   ×
                 </button>
@@ -219,11 +218,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
             
             {localOptions.searchQuery.trim() && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <span className="filter-panel__chip filter-panel__chip--green inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 🔍 {localOptions.searchQuery}
                 <button
                   onClick={() => handleChange('searchQuery', '')}
-                  className="ml-1 text-green-500 hover:text-green-700"
+                  className="filter-panel__chip-close ml-1 text-green-500 hover:text-green-700"
                 >
                   ×
                 </button>
@@ -231,11 +230,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
             
             {localOptions.onlyShowActive && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <span className="filter-panel__chip filter-panel__chip--yellow inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 🔄 Active Only
                 <button
                   onClick={() => handleChange('onlyShowActive', false)}
-                  className="ml-1 text-yellow-500 hover:text-yellow-700"
+                  className="filter-panel__chip-close ml-1 text-yellow-500 hover:text-yellow-700"
                 >
                   ×
                 </button>

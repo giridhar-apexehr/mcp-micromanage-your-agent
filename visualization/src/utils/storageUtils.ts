@@ -7,6 +7,7 @@ const STORAGE_KEY = 'workplan-visualization-data';
 const VALID_STATUSES: CommitStatus[] = [
   'not_started', 
   'in_progress', 
+  'blocked',
   'completed', 
   'cancelled', 
   'needsRefinment',
@@ -16,32 +17,38 @@ const VALID_STATUSES: CommitStatus[] = [
 /**
  * Check if an object is a valid WorkPlan and fix it if necessary
  */
-const validateWorkPlan = (data: any): WorkPlan => {
+const validateWorkPlan = (data: unknown): WorkPlan => {
+  const isRecord = (value: unknown): value is Record<string, unknown> => {
+    return typeof value === 'object' && value !== null;
+  };
+
   // Basic structure check
-  if (!data || typeof data !== 'object' || !data.goal || !Array.isArray(data.prPlans)) {
+  if (!isRecord(data) || typeof data.goal !== 'string' || !Array.isArray(data.prPlans)) {
     throw new Error('Invalid workplan data structure');
   }
 
   // Validate and normalize PRPlans
-  const validatedPrPlans: PRPlan[] = data.prPlans.map((pr: any): PRPlan => {
-    if (!pr || typeof pr !== 'object' || !pr.goal || !Array.isArray(pr.commitPlans)) {
+  const validatedPrPlans: PRPlan[] = data.prPlans.map((pr: unknown): PRPlan => {
+    if (!isRecord(pr) || typeof pr.goal !== 'string' || !Array.isArray(pr.commitPlans)) {
       throw new Error('Invalid PR data structure');
     }
     
     // Validate status
-    const status = pr.status && VALID_STATUSES.includes(pr.status as CommitStatus) 
-      ? pr.status as CommitStatus 
+    const statusValue = pr.status;
+    const status = typeof statusValue === 'string' && VALID_STATUSES.includes(statusValue as CommitStatus) 
+      ? (statusValue as CommitStatus)
       : undefined;
     
     // Validate and normalize commit plans
-    const commitPlans: CommitPlan[] = pr.commitPlans.map((commit: any): CommitPlan => {
-      if (!commit || typeof commit !== 'object' || !commit.goal) {
+    const commitPlans: CommitPlan[] = pr.commitPlans.map((commit: unknown): CommitPlan => {
+      if (!isRecord(commit) || typeof commit.goal !== 'string') {
         throw new Error('Invalid commit data structure');
       }
       
       // Validate commit status
-      const commitStatus = commit.status && VALID_STATUSES.includes(commit.status as CommitStatus) 
-        ? commit.status as CommitStatus 
+      const commitStatusValue = commit.status;
+      const commitStatus = typeof commitStatusValue === 'string' && VALID_STATUSES.includes(commitStatusValue as CommitStatus) 
+        ? (commitStatusValue as CommitStatus)
         : undefined;
       
       return {

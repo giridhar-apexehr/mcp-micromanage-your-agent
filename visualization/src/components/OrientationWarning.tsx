@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useBreakpoint, Breakpoint } from '../utils/responsiveUtils';
+import { useBreakpoint } from '../utils/responsiveUtils';
 
 /**
  * Component that detects mobile device orientation and displays a warning

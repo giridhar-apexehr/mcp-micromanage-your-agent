@@ -16,7 +16,7 @@ export interface NodeData {
 }
 
 // Extended node type
-export type ExtendedNode<T = any> = Node<T>;
+export type ExtendedNode<T = unknown> = Node<T>;
 
 // Edge type
 export type Edge = ReactFlowEdge;
