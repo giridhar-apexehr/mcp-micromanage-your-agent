@@ -29,15 +29,6 @@ const statusIcons: Record<CommitStatus, string> = {
   'user_review': '👀'
 };
 
-const statusColors: Record<CommitStatus, string> = {
-  'not_started': 'bg-gray-100 text-gray-600',
-  'in_progress': 'bg-blue-100 text-blue-600',
-  'completed': 'bg-green-100 text-green-600',
-  'cancelled': 'bg-red-100 text-red-600',
-  'needsRefinment': 'bg-purple-100 text-purple-600',
-  'user_review': 'bg-violet-100 text-violet-600'
-};
-
 function CommitNode({ data }: { data: CommitNodeData }) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const [showTooltip, setShowTooltip] = useState(false);
