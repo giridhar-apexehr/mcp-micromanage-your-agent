@@ -93,7 +93,7 @@ header {
 
 .filter-panel {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   color: var(--text-color);
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 18px;
@@ -296,7 +296,7 @@ header {
 
 .filter-panel__menu {
   position: absolute;
-  z-index: 30;
+  z-index: 60;
   top: calc(100% + 10px);
   left: 0;
   right: 0;
