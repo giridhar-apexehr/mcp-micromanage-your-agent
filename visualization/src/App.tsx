@@ -4,7 +4,7 @@ import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { WorkPlan, CommitStatus } from './types'
-import { ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
@@ -292,6 +292,27 @@ function App() {
     url.searchParams.set('workplanId', workplanId);
     window.history.pushState({}, '', url.toString());
     loadData();
+  }, [loadData]);
+
+  const goToDashboard = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('agentId');
+    url.searchParams.delete('workplanId');
+    window.history.pushState({}, '', url.toString());
+    setShowAutoRefreshPanel(false);
+    setIsAutoRefreshPanelRendered(false);
+    setShowFilterPanel(false);
+    setIsFilterPanelRendered(false);
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      loadData();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [loadData]);
 
   // Get data from JSON file on initial load
@@ -674,6 +695,20 @@ function App() {
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
       <header className="app-topbar">
         <div className="topbar-inner">
+          <div className="topbar-nav">
+            <button
+              type="button"
+              className="morphic-btn morphic-btn--icon"
+              onClick={goToDashboard}
+              title="Back to dashboard"
+              aria-label="Back to dashboard"
+            >
+              <span className="morphic-btn__icon" aria-hidden="true">
+                <ArrowLeft className="morphic-icon" size={18} strokeWidth={2} />
+              </span>
+            </button>
+          </div>
+
           <div className="topbar-brand">
             {/* Currently unused area - available for future use */}
             <div className="topbar-title">Workplan</div>

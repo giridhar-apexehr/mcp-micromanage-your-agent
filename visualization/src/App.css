@@ -927,6 +927,12 @@ header {
   gap: 16px;
 }
 
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .topbar-brand {
   min-width: 220px;
   display: flex;
