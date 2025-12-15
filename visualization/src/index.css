@@ -173,18 +173,24 @@ h1 {
 }
 
 .dark-mode .react-flow__controls {
-  background-color: var(--panel-bg);
-  box-shadow: 0 0 2px 1px var(--panel-shadow);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(15, 23, 42, 0.30);
+  backdrop-filter: blur(18px) saturate(175%);
+  -webkit-backdrop-filter: blur(18px) saturate(175%);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.40) inset;
 }
 
 .dark-mode .react-flow__controls-button {
-  background-color: var(--filter-button-bg);
-  color: var(--text-color);
-  border-color: var(--node-border);
+  color: rgba(226, 232, 240, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.28);
 }
 
 .dark-mode .react-flow__controls-button:hover {
-  background-color: var(--filter-button-hover);
+  background-color: transparent;
 }
 
 /* Ensure ReactFlow Controls render all buttons and icons correctly in dark mode */
@@ -193,15 +199,134 @@ h1 {
   flex-direction: column;
   height: auto;
   overflow: visible;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(165%);
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.06) inset;
+}
+
+.react-flow__controls::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(59, 130, 246, 0.12), transparent 62%);
+  pointer-events: none;
+}
+
+.react-flow__controls::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  top: -45%;
+  width: 140%;
+  height: 120%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.00) 45%);
+  transform: rotate(6deg);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.dark-mode .react-flow__controls::before {
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(226, 232, 240, 0.16), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(96, 165, 250, 0.10), transparent 62%);
+}
+
+.dark-mode .react-flow__controls::after {
+  opacity: 0.20;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.18), rgba(226, 232, 240, 0.00) 45%);
+}
+
+.react-flow__controls-button {
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(15, 23, 42, 0.92);
+  cursor: pointer;
+  position: relative;
+  transform: translateZ(0);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.react-flow__controls-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background:
+    radial-gradient(160px 50px at 18% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(148, 163, 184, 0.06));
+  opacity: 0.65;
+  transition: opacity 160ms ease;
+}
+
+.dark-mode .react-flow__controls-button::before {
+  background:
+    radial-gradient(160px 50px at 18% 0%, rgba(226, 232, 240, 0.18), transparent 60%),
+    linear-gradient(180deg, rgba(226, 232, 240, 0.10), rgba(148, 163, 184, 0.04));
+}
+
+.react-flow__controls-button > * {
+  position: relative;
+  z-index: 1;
+}
+
+.react-flow__controls-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow:
+    0 14px 24px rgba(15, 23, 42, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+.react-flow__controls-button:hover::before {
+  opacity: 0.95;
+}
+
+.dark-mode .react-flow__controls-button:hover {
+  border-color: rgba(96, 165, 250, 0.30);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.react-flow__controls-button:active {
+  transform: translateY(0px) scale(0.98);
 }
 
 .dark-mode .react-flow__controls-button {
-  background-color: var(--filter-button-bg);
-  color: var(--text-color);
+  color: rgba(226, 232, 240, 0.92);
 }
 
 .react-flow__controls-button svg {
+  stroke: currentColor;
   fill: currentColor;
+  width: 14px;
+  height: 14px;
 }
 
 .dark-mode .react-flow__background {
