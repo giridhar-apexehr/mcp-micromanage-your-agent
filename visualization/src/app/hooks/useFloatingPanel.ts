@@ -69,6 +69,7 @@ export type UseFloatingPanelResult = {
   position: FloatingPanelPosition | null;
   open: () => void;
   close: () => void;
+  reset: () => void;
   toggle: () => void;
   updatePosition: () => void;
 };
@@ -134,6 +135,13 @@ export const useFloatingPanel = (options: UseFloatingPanelOptions): UseFloatingP
       closeTimeoutRef.current = null;
     }, closeDelayMs);
   }, [clearCloseTimeout, closeDelayMs]);
+
+  const reset = useCallback(() => {
+    clearCloseTimeout();
+    setIsOpen(false);
+    setIsRendered(false);
+    setPosition(null);
+  }, [clearCloseTimeout]);
 
   const toggle = useCallback(() => {
     if (isOpen) {
@@ -207,6 +215,7 @@ export const useFloatingPanel = (options: UseFloatingPanelOptions): UseFloatingP
     position,
     open,
     close,
+    reset,
     toggle,
     updatePosition
   };

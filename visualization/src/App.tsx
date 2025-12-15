@@ -9,6 +9,7 @@ import WorkplanPage from './components/workplan/WorkplanPage'
 import WorkplanTopbar from './components/workplan/WorkplanTopbar'
 import WorkplanActionsBar from './components/workplan/WorkplanActionsBar'
 import ErrorOverlay from './components/common/ErrorOverlay'
+import AutoRefreshPanelHost, { AutoRefreshPanelApi } from './components/panels/AutoRefreshPanelHost'
 import './App.css'
 
 function App() {
@@ -34,13 +35,10 @@ function App() {
     draftSecondsForSelection
   } = usePolling({ loadData });
   const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0);
-  const [showAutoRefreshPanel, setShowAutoRefreshPanel] = useState<boolean>(false);
   const autoRefreshAnchorRef = useRef<HTMLDivElement | null>(null);
   const autoRefreshButtonRef = useRef<HTMLButtonElement | null>(null);
-  const autoRefreshPanelRef = useRef<HTMLDivElement | null>(null);
-  const [autoRefreshPanelPosition, setAutoRefreshPanelPosition] = useState<{ top: number; left: number } | null>(null);
-  const [isAutoRefreshPanelRendered, setIsAutoRefreshPanelRendered] = useState<boolean>(false);
-  const autoRefreshPanelCloseTimeoutRef = useRef<number | null>(null);
+  const autoRefreshApiRef = useRef<AutoRefreshPanelApi | null>(null);
+  const [isAutoRefreshPanelOpen, setIsAutoRefreshPanelOpen] = useState<boolean>(false);
 
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -56,8 +54,7 @@ function App() {
   const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode();
 
   const goToDashboard = useCallback(() => {
-    setShowAutoRefreshPanel(false);
-    setIsAutoRefreshPanelRendered(false);
+    autoRefreshApiRef.current?.reset();
     setShowFilterPanel(false);
     setIsFilterPanelRendered(false);
     goToDashboardBase();
@@ -105,111 +102,9 @@ function App() {
     openFilterPanel();
   }, [closeFilterPanel, openFilterPanel, showFilterPanel]);
 
-  const closeAutoRefreshPanel = useCallback(() => {
-    setShowAutoRefreshPanel(false);
-
-    if (autoRefreshPanelCloseTimeoutRef.current) {
-      window.clearTimeout(autoRefreshPanelCloseTimeoutRef.current);
-      autoRefreshPanelCloseTimeoutRef.current = null;
-    }
-
-    autoRefreshPanelCloseTimeoutRef.current = window.setTimeout(() => {
-      setIsAutoRefreshPanelRendered(false);
-      autoRefreshPanelCloseTimeoutRef.current = null;
-    }, 180);
-  }, []);
-
-  const openAutoRefreshPanel = useCallback(() => {
-    if (autoRefreshPanelCloseTimeoutRef.current) {
-      window.clearTimeout(autoRefreshPanelCloseTimeoutRef.current);
-      autoRefreshPanelCloseTimeoutRef.current = null;
-    }
-
-    setIsAutoRefreshPanelRendered(true);
-    requestAnimationFrame(() => {
-      setShowAutoRefreshPanel(true);
-    });
-  }, []);
-
   const handleAutoRefreshDropdownClick = useCallback(() => {
-    if (showAutoRefreshPanel) {
-      closeAutoRefreshPanel();
-      return;
-    }
-    openAutoRefreshPanel();
-  }, [closeAutoRefreshPanel, openAutoRefreshPanel, showAutoRefreshPanel]);
-
-  useEffect(() => {
-    return () => {
-      if (autoRefreshPanelCloseTimeoutRef.current) {
-        window.clearTimeout(autoRefreshPanelCloseTimeoutRef.current);
-      }
-    };
+    autoRefreshApiRef.current?.toggle();
   }, []);
-
-  const updateAutoRefreshPanelPosition = useCallback(() => {
-    const button = autoRefreshButtonRef.current;
-    if (!button) return;
-
-    const rect = button.getBoundingClientRect();
-    const margin = 10;
-    const viewportWidth = window.innerWidth;
-    const panelWidth = Math.min(320, Math.max(220, viewportWidth - 20));
-    const desiredLeft = rect.left;
-    const clampedLeft = Math.min(Math.max(10, desiredLeft), viewportWidth - 10 - panelWidth);
-    const top = rect.bottom + margin;
-
-    setAutoRefreshPanelPosition({ top, left: clampedLeft });
-  }, []);
-
-  useEffect(() => {
-    if (!showAutoRefreshPanel) return;
-
-    updateAutoRefreshPanelPosition();
-
-    const handleViewportChange = () => {
-      updateAutoRefreshPanelPosition();
-    };
-
-    window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('scroll', handleViewportChange, true);
-
-    return () => {
-      window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('scroll', handleViewportChange, true);
-    };
-  }, [showAutoRefreshPanel, updateAutoRefreshPanelPosition]);
-
-  useEffect(() => {
-    if (!showAutoRefreshPanel) return;
-
-    const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (autoRefreshAnchorRef.current && autoRefreshAnchorRef.current.contains(target)) {
-        return;
-      }
-      if (autoRefreshPanelRef.current && autoRefreshPanelRef.current.contains(target)) {
-        return;
-      }
-      closeAutoRefreshPanel();
-    };
-
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [closeAutoRefreshPanel, showAutoRefreshPanel]);
-
-  useEffect(() => {
-    if (!showAutoRefreshPanel) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeAutoRefreshPanel();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [closeAutoRefreshPanel, showAutoRefreshPanel]);
 
   useEffect(() => {
     return () => {
@@ -289,12 +184,12 @@ function App() {
               lastLoadedTime={lastLoadedTime}
               pollingEnabled={pollingEnabled}
               currentPollingSeconds={currentPollingSeconds}
-              showAutoRefreshPanel={showAutoRefreshPanel}
+              showAutoRefreshPanel={isAutoRefreshPanelOpen}
               autoRefreshAnchorRef={autoRefreshAnchorRef}
               autoRefreshButtonRef={autoRefreshButtonRef}
               onTogglePolling={togglePolling}
               onToggleAutoRefreshDropdown={handleAutoRefreshDropdownClick}
-              onCloseAutoRefreshPanel={closeAutoRefreshPanel}
+              onCloseAutoRefreshPanel={() => autoRefreshApiRef.current?.close()}
               isLoading={isLoading}
               refreshSpinTick={refreshSpinTick}
               onRefresh={() => {
@@ -311,71 +206,29 @@ function App() {
         />
       )}
     >
-      {isAutoRefreshPanelRendered && autoRefreshPanelPosition && (
-        <div
-          className={`auto-refresh-panel-container ${showAutoRefreshPanel ? 'is-open' : 'is-closed'}`}
-          style={{ top: autoRefreshPanelPosition.top, left: autoRefreshPanelPosition.left }}
-        >
-          <div ref={autoRefreshPanelRef} className="auto-refresh-panel" role="dialog" aria-label="Auto-refresh settings">
-            <div className="auto-refresh-panel__header">
-              <div className="auto-refresh-panel__title">Auto-refresh</div>
-              <div className="auto-refresh-panel__subtitle">Current: {currentPollingSeconds}s</div>
-            </div>
-
-            <div className="auto-refresh-panel__section">
-              <div className="auto-refresh-panel__label">Presets</div>
-              <div className="auto-refresh-panel__preset-grid" role="listbox" aria-label="Preset durations">
-                {AUTO_REFRESH_PRESETS_SECONDS.map((seconds) => {
-                  const selected = seconds === draftSecondsForSelection;
-                  return (
-                    <button
-                      key={seconds}
-                      type="button"
-                      className={`auto-refresh-panel__preset ${selected ? 'is-selected' : ''}`}
-                      aria-label={`${seconds} seconds`}
-                      onClick={() => setDraftPollingSeconds(String(seconds))}
-                    >
-                      {seconds}s
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="auto-refresh-panel__section">
-              <label className="auto-refresh-panel__label" htmlFor="auto-refresh-seconds">
-                Custom (seconds)
-              </label>
-              <input
-                id="auto-refresh-seconds"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                step={1}
-                className="auto-refresh-panel__input"
-                value={draftPollingSeconds}
-                onChange={(e) => setDraftPollingSeconds(e.target.value)}
-              />
-            </div>
-
-            <div className="auto-refresh-panel__footer">
-              <button
-                type="button"
-                className="morphic-btn"
-                disabled={!draftSecondsValid}
-                onClick={() => {
-                  if (!draftSecondsValid) return;
-                  const nextMs = Math.round(parsedDraftSeconds) * 1000;
-                  setPollingIntervalMs(nextMs);
-                  closeAutoRefreshPanel();
-                }}
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AutoRefreshPanelHost
+        anchorRef={autoRefreshButtonRef}
+        ignoreOutsideClickRef={autoRefreshAnchorRef}
+        onApi={(api) => {
+          autoRefreshApiRef.current = api;
+        }}
+        onStateChange={({ isOpen }) => {
+          setIsAutoRefreshPanelOpen(isOpen);
+        }}
+        currentPollingSeconds={currentPollingSeconds}
+        presetsSeconds={AUTO_REFRESH_PRESETS_SECONDS}
+        draftPollingSeconds={draftPollingSeconds}
+        draftSecondsForSelection={draftSecondsForSelection}
+        draftSecondsValid={draftSecondsValid}
+        onSelectPresetSeconds={(seconds) => setDraftPollingSeconds(String(seconds))}
+        onDraftSecondsChange={setDraftPollingSeconds}
+        onApply={() => {
+          if (!draftSecondsValid) return;
+          const nextMs = Math.round(parsedDraftSeconds) * 1000;
+          setPollingIntervalMs(nextMs);
+          autoRefreshApiRef.current?.close();
+        }}
+      />
       
       {/* Filter panel */}
       {isFilterPanelRendered && filterPanelPosition && (
