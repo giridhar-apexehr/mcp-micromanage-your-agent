@@ -16,6 +16,12 @@ alwaysApply: false
 - Each commit should represent an atomic change within its PR
 - To minimize dependencies between PRs, ideally making them independently implementable
 
+## Multiple Workplans
+- This toolset supports multiple agents and multiple workplans.
+- `agentId` is required on every tool call.
+- `workplanId` is required on every tool call.
+- Plan creation and the status/progress rules apply **within the selected (agentId, workplanId)**.
+
 ## Method
 ### Analysis Phase
 - Analyze the task's architecture requirements thoroughly

@@ -5,6 +5,10 @@ alwaysApply: false
 ---
     **STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:**
     There is always exactly one task in either the in_progress or user_review state.
+    
+    **Multiple Workplans**:
+    - If multiple agents/workplans are used, the invariants in this document apply **within the selected (agentId, workplanId)**.
+    - When you are managing more than one plan in parallel, explicitly specify which `agentId` and `workplanId` you are updating/tracking.
     Before updating the status, we guarantee that each condition is met.
 
     needsRefinment → in_progress conditions:
