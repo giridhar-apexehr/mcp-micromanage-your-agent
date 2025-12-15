@@ -1,9 +1,13 @@
+import { z } from 'zod';
 import { Tool, createErrorResponse } from '../common.js';
 import { workPlan } from '../../index.js';
 import logger from '../../utils/logger.js';
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
-export const TRACK_TOOL: Tool<{}> = {
+export const TRACK_TOOL: Tool<{
+  agentId: z.ZodString;
+  workplanId: z.ZodString;
+}> = {
   name: "track",
   description: `
     This tool helps you monitor the current state of the implementation plan, view progress, and identify possible next steps.
@@ -21,8 +25,11 @@ export const TRACK_TOOL: Tool<{}> = {
     - Review recommended actions to decide your next steps.
     - **Absolutely follow the content of "agentInstruction" in the response JSON**!!.
   `,
-  schema: {},
-  handler: async (_, extra: RequestHandlerExtra) => {
+  schema: {
+    agentId: z.string().min(1, 'agentId must be a non-empty string').describe('Required identifier for the calling agent.'),
+    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to track.')
+  },
+  handler: async (params, extra: RequestHandlerExtra) => {
     try {
       logger.info('Track tool called');
       
@@ -36,7 +43,7 @@ export const TRACK_TOOL: Tool<{}> = {
         return createErrorResponse('WorkPlan is not ready. Server initialization incomplete.');
       }
       
-      const result = workPlan.trackProgress();
+      const result = workPlan.trackProgress(String(params.agentId), String(params.workplanId));
       
       return {
         content: result.content.map(item => ({
