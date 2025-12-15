@@ -10,8 +10,8 @@
 
 import { Monitor, Moon, Sun } from 'lucide-react';
 
-import type { ThemeMode } from '../../app/hooks/useThemeMode';
-import type { WorkplanCatalog } from '../../app/utils/workplanCatalog';
+import type { ThemeMode } from '../app/hooks/useThemeMode';
+import type { WorkplanCatalog } from '../app/utils/workplanCatalog';
 
 export type DashboardPageProps = {
   isDarkMode: boolean;

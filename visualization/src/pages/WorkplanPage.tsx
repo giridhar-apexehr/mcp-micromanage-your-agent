@@ -10,9 +10,9 @@
 import type { ReactNode } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 
-import WorkplanFlow from '../WorkplanFlow';
-import type { FilterOptions } from '../FilterPanel';
-import type { WorkPlan } from '../../types';
+import WorkplanFlow from '../components/WorkplanFlow';
+import type { FilterOptions } from '../components/panels/FilterPanel';
+import type { WorkPlan } from '../types';
 
 export type WorkplanPageProps = {
   isDarkMode: boolean;

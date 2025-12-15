@@ -25,7 +25,7 @@ import { useResponsiveFlowDimensions } from '../utils/responsiveUtils';
 import CommitNode from './CommitNode';
 import type { CommitNodeData } from './CommitNode';
 import PRNode from './PRNode';
-import { FilterOptions } from '../components/FilterPanel';
+import { FilterOptions } from './panels/FilterPanel';
 import './nodes/nodes.css';
 
 export interface WorkplanFlowProps {
