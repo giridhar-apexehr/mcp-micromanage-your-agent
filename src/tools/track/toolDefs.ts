@@ -27,7 +27,7 @@ export const TRACK_TOOL: Tool<{
   `,
   schema: {
     agentId: z.string().min(1, 'agentId must be a non-empty string').describe('Required identifier for the calling agent.'),
-    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to track.')
+    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to track. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.')
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {

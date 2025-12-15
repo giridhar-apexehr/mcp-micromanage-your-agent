@@ -52,7 +52,7 @@ export const PLAN_TOOL: Tool<{
     })).min(1, "At least one PR plan is required").describe("Array of PR plans. Each PR represents a logical unit of work in the implementation plan."),
     needsMoreThoughts: z.boolean().optional().describe("Whether this plan might need further refinement. Set to true if you think the plan may need changes."),
     agentId: z.string().min(1, "agentId must be a non-empty string").describe("Required identifier for the calling agent. Must be provided on every tool call."),
-    workplanId: z.string().min(1, "workplanId must be a non-empty string").describe("Required identifier for which workplan to create/update. Must be a unique ID per workplan.")
+    workplanId: z.string().min(1, "workplanId must be a non-empty string").describe("Required identifier for which workplan to create/update. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.")
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {

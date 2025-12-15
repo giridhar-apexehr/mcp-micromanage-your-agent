@@ -35,7 +35,7 @@ export const UPDATE_STATUS_TOOL: Tool<{
     developerNote: z.string().optional()
       .describe("Developer implementation notes. Can be added to both PRs and commits to document important implementation details."),
     agentId: z.string().min(1, 'agentId must be a non-empty string').describe('Required identifier for the calling agent.'),
-    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to update.')
+    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to update. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.')
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {
