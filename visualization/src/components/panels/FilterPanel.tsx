@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CommitStatus } from '../types';
+import { CommitStatus } from '../../types';
 import {
   AlertTriangle,
   Ban,

@@ -1,7 +1,7 @@
 import { Edge, Position } from 'reactflow';
 import { WorkPlan, CommitStatus, NodeData, ExtendedNode } from '../types';
 import { CommitNodeData } from '../components/CommitNode';
-import { FilterOptions } from '../components/FilterPanel';
+import { FilterOptions } from '../components/panels/FilterPanel';
 
 // Function to return color based on status
 export const getStatusColor = (status: CommitStatus): string => {
