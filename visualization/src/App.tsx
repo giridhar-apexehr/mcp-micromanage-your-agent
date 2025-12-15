@@ -61,11 +61,6 @@ function App() {
     goToDashboardBase();
   }, [goToDashboardBase]);
 
-  // Get data from JSON file on initial load
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   // Filter options change handler
   const handleFilterChange = useCallback((newOptions: FilterOptions) => {
     setFilterOptions(newOptions);

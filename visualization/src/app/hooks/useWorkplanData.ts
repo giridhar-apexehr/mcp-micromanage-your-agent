@@ -196,6 +196,10 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
   }, [loadData]);
 
   useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
     const handlePopState = () => {
       loadData();
     };
