@@ -3,18 +3,22 @@ import { ReactFlowProvider } from 'reactflow'
 import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
-import { WorkPlan, CommitStatus } from './types'
 import { useThemeMode } from './app/hooks/useThemeMode'
-import { buildWorkplanCatalog, WorkplanCatalog } from './app/utils/workplanCatalog'
+import { useWorkplanData } from './app/hooks/useWorkplanData'
 import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
 
 function App() {
-  // Initialize with normalized sample data
-  const [workplan, setWorkplan] = useState<WorkPlan | null>(null);
-  const [workplanCatalog, setWorkplanCatalog] = useState<WorkplanCatalog | null>(null);
-  const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    workplan,
+    workplanCatalog,
+    lastLoadedTime,
+    loadError,
+    isLoading,
+    loadData,
+    openWorkplan,
+    goToDashboard: goToDashboardBase
+  } = useWorkplanData();
   // Polling interval (milliseconds)
   const [pollingIntervalMs, setPollingIntervalMs] = useState<number>(() => {
     const saved = localStorage.getItem('pollingIntervalMs');
@@ -24,9 +28,6 @@ function App() {
   });
   // Whether polling is enabled
   const [pollingEnabled, setPollingEnabled] = useState<boolean>(true);
-  // Loading flag
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const isLoadingRef = useRef<boolean>(false);
   const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0);
   // Track last polling attempt
   const pollingTimeoutRef = useRef<number | null>(null);
@@ -52,162 +53,13 @@ function App() {
 
   const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode();
 
-  // Separate data loading function for reusability
-  const loadData = useCallback(async () => {
-    if (isLoadingRef.current) return; // Do nothing if already loading
-    
-    isLoadingRef.current = true;
-    setIsLoading(true);
-    try {
-      // Get JSON file directly (add timestamp parameter to avoid cache)
-      // Options to completely disable caching
-      const fetchOptions = {
-        method: 'GET',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      };
-      
-      const timestamp = new Date().getTime();
-      const response = await fetch(`/data/workplan.json?t=${timestamp}`, fetchOptions);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
-      }
-      
-      const actualWorkPlan = await response.json();
-
-      const catalog = buildWorkplanCatalog(actualWorkPlan);
-
-      setWorkplanCatalog(catalog);
-
-      const selectionState = window.history.state as { selected?: boolean } | null;
-      const selectedByUser = selectionState?.selected === true;
-
-      const resolvedTicket = (() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestedAgentId = urlParams.get('agentId');
-        const requestedWorkplanId = urlParams.get('workplanId');
-
-        if (!selectedByUser) {
-          return null;
-        }
-
-        if (actualWorkPlan && typeof actualWorkPlan === 'object') {
-          if (actualWorkPlan.currentTicket) {
-            return actualWorkPlan.currentTicket;
-          }
-
-          if (actualWorkPlan.workplans && typeof actualWorkPlan.workplans === 'object') {
-            if (requestedWorkplanId && actualWorkPlan.workplans[requestedWorkplanId]) {
-              return actualWorkPlan.workplans[requestedWorkplanId];
-            }
-            return null;
-          }
-
-          if (actualWorkPlan.agents && typeof actualWorkPlan.agents === 'object') {
-            const resolvedAgent = (() => {
-              if (requestedAgentId && actualWorkPlan.agents[requestedAgentId]) {
-                return actualWorkPlan.agents[requestedAgentId];
-              }
-              return null;
-            })();
-
-            if (!resolvedAgent || typeof resolvedAgent !== 'object') {
-              return null;
-            }
-
-            if (resolvedAgent.workplans && typeof resolvedAgent.workplans === 'object') {
-              if (requestedWorkplanId && resolvedAgent.workplans[requestedWorkplanId]) {
-                return resolvedAgent.workplans[requestedWorkplanId];
-              }
-            }
-
-            return null;
-          }
-        }
-
-        return null;
-      })();
-
-      // If nothing selected or selection is ambiguous, we show the dashboard instead of erroring.
-      if (!resolvedTicket || resolvedTicket === 'noTicket') {
-        setWorkplan(null);
-        setLastLoadedTime(new Date());
-        setLoadError(null);
-        return;
-      }
-      
-      // Data structure conversion
-      const convertedWorkPlan: WorkPlan = {
-        goal: resolvedTicket.goal,
-        prPlans: resolvedTicket.pullRequests.map((pr: {
-          goal: string;
-          status: string;
-          developerNote?: string;
-          commits: Array<{
-            goal: string;
-            status: string;
-            developerNote?: string;
-          }>;
-        }) => ({
-          goal: pr.goal,
-          status: pr.status as CommitStatus,
-          developerNote: pr.developerNote,
-          commitPlans: pr.commits.map((commit: {
-            goal: string;
-            status: string;
-            developerNote?: string;
-          }) => ({
-            goal: commit.goal,
-            status: commit.status as CommitStatus,
-            developerNote: commit.developerNote
-          }))
-        }))
-      };
-      
-      // Apply updates
-      setWorkplan(convertedWorkPlan);
-      setLastLoadedTime(new Date());
-      setLoadError(null);
-    } catch (error) {
-      console.error('Error occurred while loading data:', error);
-      setLoadError('Failed to load data.');
-    } finally {
-      isLoadingRef.current = false;
-      setIsLoading(false);
-    }
-  }, []);
-
-  const openWorkplan = useCallback((agentId: string, workplanId: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('agentId', agentId);
-    url.searchParams.set('workplanId', workplanId);
-    window.history.pushState({ selected: true }, '', url.toString());
-    loadData();
-  }, [loadData]);
-
   const goToDashboard = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('agentId');
-    url.searchParams.delete('workplanId');
-    window.history.pushState({ selected: false }, '', url.toString());
     setShowAutoRefreshPanel(false);
     setIsAutoRefreshPanelRendered(false);
     setShowFilterPanel(false);
     setIsFilterPanelRendered(false);
-    loadData();
-  }, [loadData]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      loadData();
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [loadData]);
+    goToDashboardBase();
+  }, [goToDashboardBase]);
 
   // Get data from JSON file on initial load
   useEffect(() => {
