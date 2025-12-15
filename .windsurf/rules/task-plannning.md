@@ -1,0 +1,44 @@
+---
+description: When tickets have been assigned or revising the implementation plan
+trigger: model_decision
+---
+
+# Task Planning Guide
+
+## Purpose
+- To design a structured implementation approach before any coding begins
+- To ensure clear understanding of requirements and dependencies
+- To divide tickets into small PRs and commits for easier review and integration
+
+## Output
+- A comprehensive work plan organized by PRs and commits
+- Each PR should be small, functional, and independently reviewable
+- Each commit should represent an atomic change within its PR
+- To minimize dependencies between PRs, ideally making them independently implementable
+
+## Multiple Workplans
+- This toolset supports multiple agents and multiple workplans, but all planning/status rules are scoped to a **single (agentId, workplanId)**.
+- Required inputs: every tool call must include both `agentId` and `workplanId`.
+- Default behavior: keep using the same `(agentId, workplanId)` for the current ticket/thread; do **not** create/switch workplans per prompt.
+- Switch/create a different `workplanId` only when the user explicitly starts a new ticket/workplan or explicitly requests a switch.
+- If the correct `(agentId, workplanId)` is unclear, ask the user rather than guessing or creating a new workplan.
+
+## Method
+### Analysis Phase
+- Analyze the task's architecture requirements thoroughly
+- Explore and read all potentially relevant existing code and similar reference code
+- Develop a meta architecture plan for the solution
+
+### Planning Approach
+- Break down the task into smallest possible PRs
+- Order PRs logically (e.g., setup → core logic → tests)
+- Define 2-4 minimal atomic commits for each PR
+- Prefer splitting tasks into PRs rather than large commits
+
+### Implementation Criteria
+- Only proceed after achieving 100% clarity and confidence
+- Ensure all affected parts of the codebase have been fully identified through dependency tracing
+- **The work plan must be approved by the user before implementation**
+
+## Prohibited Actions
+- **Any implementation or code writing, even "example code"**

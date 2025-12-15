@@ -1,0 +1,42 @@
+---
+description: Always When updating the status of a task
+trigger: model_decision
+---
+
+## STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:
+
+### Scope (multiple agents/workplans):
+- All rules and invariants in this document apply **within a single selected (agentId, workplanId)**.
+- The invariant "exactly one task is in either `in_progress` or `user_review`" is **per (agentId, workplanId)** (not global across all agents/workplans).
+
+### When operating across multiple workplans:
+- Always explicitly specify which `agentId` and `workplanId` you are updating/tracking.
+- Default behavior: keep using the same `(agentId, workplanId)` for the current ticket/thread; do **not** create/switch workplans per prompt.
+- If it is unclear which `(agentId, workplanId)` applies, ask the user rather than guessing.
+
+### Before updating the status, we guarantee that each condition is met:
+
+#### needsRefinment → in_progress conditions:
+✅ Requirements have been sufficiently clarified and ready for implementation
+✅ **Fully understand the code's dependencies and have already reviewed them**
+✅ The impact on existing code has been assessed
+
+#### in_progress → user_review conditions:
+✅ I explicitly checked that there were no compile errors
+✅ Necessary tests have been added and all pass
+✅ Required documentation updates are completed
+
+#### user_review → in_progress conditions:
+✅ From feedback, the content to be modified is completely clear
+
+#### user_review → completed conditions:
+✅ Only when explicitly approved by the user, absolutely.
+
+#### * → needsRefinment conditions:
+✅ It becomes apparent that the task requirements are unclear or incomplete
+
+#### * → cancelled conditions:
+✅ There is a clear reason why the task is no longer needed, or alternative methods or solutions to meet the requirements are clear
+✅ The impact of cancellation on other related tasks has been evaluated
+✅ No critical work has been lost due to cancellation
+✅ The cancellation does not block progress on other dependent tasks
