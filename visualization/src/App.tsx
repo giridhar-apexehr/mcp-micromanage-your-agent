@@ -6,7 +6,8 @@ import { useWorkplanData } from './app/hooks/useWorkplanData'
 import { usePolling } from './app/hooks/usePolling'
 import DashboardPage from './components/dashboard/DashboardPage'
 import WorkplanPage from './components/workplan/WorkplanPage'
-import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
+import WorkplanTopbar from './components/workplan/WorkplanTopbar'
+import WorkplanActionsBar from './components/workplan/WorkplanActionsBar'
 import './App.css'
 
 function App() {
@@ -297,136 +298,34 @@ function App() {
       workplan={workplan}
       filterOptions={filterOptions}
       header={(
-        <header className="app-topbar">
-          <div className="topbar-inner">
-            <div className="topbar-nav">
-              <button
-                type="button"
-                className="morphic-btn morphic-btn--icon"
-                onClick={goToDashboard}
-                title="Back to dashboard"
-                aria-label="Back to dashboard"
-              >
-                <span className="morphic-btn__icon" aria-hidden="true">
-                  <ArrowLeft className="morphic-icon" size={18} strokeWidth={2} />
-                </span>
-              </button>
-            </div>
-
-            <div className="topbar-brand">
-              {/* Currently unused area - available for future use */}
-              <div className="topbar-title">Workplan</div>
-              <div className="topbar-subtitle" title={workplan.goal}>{workplan.goal}</div>
-            </div>
-
-            <div className="topbar-actions">
-              {lastLoadedTime && (
-                <span className="topbar-meta">
-                  Updated {lastLoadedTime.toLocaleTimeString()}
-                </span>
-              )}
-
-              <div className="morphic-bar" role="group" aria-label="Actions">
-                <div className="morphic-split" role="group" aria-label="Auto refresh" ref={autoRefreshAnchorRef}>
-                  <button
-                    onClick={() => {
-                      togglePolling();
-                      if (showAutoRefreshPanel) {
-                        closeAutoRefreshPanel();
-                      }
-                    }}
-                    className={`morphic-btn morphic-btn--quiet morphic-split__left ${pollingEnabled ? 'is-on' : 'is-off'}`}
-                    title={pollingEnabled ? `Stop auto-refresh (every ${currentPollingSeconds}s)` : `Start auto-refresh (every ${currentPollingSeconds}s)`}
-                    aria-label={pollingEnabled ? `Stop auto-refresh (every ${currentPollingSeconds} seconds)` : `Start auto-refresh (every ${currentPollingSeconds} seconds)`}
-                    type="button"
-                  >
-                    <span className="morphic-btn__icon" aria-hidden="true">
-                      <RotateCw
-                        className={`morphic-icon ${pollingEnabled ? 'is-spinning' : ''}`}
-                        size={18}
-                        strokeWidth={2}
-                      />
-                    </span>
-                    <span className="morphic-btn__label">Auto</span>
-                    <span className={`morphic-dot ${pollingEnabled ? 'is-on' : 'is-off'}`} aria-hidden="true" />
-                  </button>
-
-                  <button
-                    onClick={handleAutoRefreshDropdownClick}
-                    ref={autoRefreshButtonRef}
-                    className={`morphic-btn morphic-btn--icon morphic-split__right ${showAutoRefreshPanel ? 'is-active' : ''}`}
-                    title="Auto-refresh interval"
-                    aria-label="Auto-refresh interval"
-                    aria-haspopup="dialog"
-                    aria-expanded={showAutoRefreshPanel}
-                    type="button"
-                  >
-                    <span className="morphic-btn__icon" aria-hidden="true">
-                      <ChevronDown className="morphic-icon" size={18} strokeWidth={2} />
-                    </span>
-                  </button>
-                </div>
-
-                <div className="morphic-divider" aria-hidden="true" />
-
-                <button
-                  onClick={() => {
-                    setRefreshSpinTick((prev) => prev + 1);
-                    loadData();
-                  }}
-                  disabled={isLoading}
-                  className="morphic-btn"
-                  title="Refresh now"
-                  aria-label="Refresh now"
-                  type="button"
-                >
-                  <span className="morphic-btn__icon" aria-hidden="true">
-                    <RefreshCw
-                      key={refreshSpinTick}
-                      className={`morphic-icon ${refreshSpinTick > 0 ? 'morphic-icon--spin-once' : ''}`}
-                      size={18}
-                      strokeWidth={2}
-                    />
-                  </span>
-                  <span className="morphic-btn__label">Refresh</span>
-                </button>
-
-                <button
-                  onClick={toggleThemeMode}
-                  className="morphic-btn morphic-btn--icon"
-                  title={`Theme: ${themeMode.charAt(0).toUpperCase()}${themeMode.slice(1)} (click to change)`}
-                  aria-label={`Theme: ${themeMode}. Click to change.`}
-                  type="button"
-                >
-                  <span className="morphic-btn__icon" aria-hidden="true">
-                    {themeMode === 'light' && (
-                      <Sun className="morphic-icon" size={18} strokeWidth={2} />
-                    )}
-                    {themeMode === 'dark' && (
-                      <Moon className="morphic-icon" size={18} strokeWidth={2} />
-                    )}
-                    {themeMode === 'system' && (
-                      <Monitor className="morphic-icon" size={18} strokeWidth={2} />
-                    )}
-                  </span>
-                </button>
-
-                <button
-                  onClick={handleFilterClick}
-                  ref={filterButtonRef}
-                  className={`morphic-btn ${showFilterPanel ? 'is-active' : ''}`}
-                  aria-label="Open filter"
-                  type="button"
-                >
-                  <span className="morphic-btn__icon" aria-hidden="true">
-                    <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
-                  </span>
-                  <span className="morphic-btn__label">Filter</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <WorkplanTopbar
+          title={workplan.goal}
+          onBack={goToDashboard}
+          actions={(
+            <WorkplanActionsBar
+              lastLoadedTime={lastLoadedTime}
+              pollingEnabled={pollingEnabled}
+              currentPollingSeconds={currentPollingSeconds}
+              showAutoRefreshPanel={showAutoRefreshPanel}
+              autoRefreshAnchorRef={autoRefreshAnchorRef}
+              autoRefreshButtonRef={autoRefreshButtonRef}
+              onTogglePolling={togglePolling}
+              onToggleAutoRefreshDropdown={handleAutoRefreshDropdownClick}
+              onCloseAutoRefreshPanel={closeAutoRefreshPanel}
+              isLoading={isLoading}
+              refreshSpinTick={refreshSpinTick}
+              onRefresh={() => {
+                setRefreshSpinTick((prev) => prev + 1);
+                loadData();
+              }}
+              themeMode={themeMode}
+              onToggleThemeMode={toggleThemeMode}
+              showFilterPanel={showFilterPanel}
+              filterButtonRef={filterButtonRef}
+              onToggleFilterPanel={handleFilterClick}
+            />
+          )}
+        />
       )}
     >
       {isAutoRefreshPanelRendered && autoRefreshPanelPosition && (
