@@ -7,9 +7,27 @@ import { WorkPlan, CommitStatus } from './types'
 import { ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
 
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+};
+
+const hasTicketGoal = (ticket: unknown): ticket is { goal: string } => {
+  return isRecord(ticket) && typeof ticket.goal === 'string';
+};
+
 function App() {
   // Initialize with normalized sample data
   const [workplan, setWorkplan] = useState<WorkPlan | null>(null);
+  const [workplanCatalog, setWorkplanCatalog] = useState<{
+    agents: Array<{
+      agentId: string;
+      workplans: Array<{
+        workplanId: string;
+        goal?: string;
+        hasTicket: boolean;
+      }>;
+    }>;
+  } | null>(null);
   const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Polling interval (milliseconds)
@@ -94,11 +112,143 @@ function App() {
       }
       
       const actualWorkPlan = await response.json();
+
+      const catalog = (() => {
+        // Prefer the current schema: agents[agentId].workplans[workplanId]
+        if (isRecord(actualWorkPlan) && isRecord(actualWorkPlan.agents)) {
+          const agentsObject = actualWorkPlan.agents as Record<string, unknown>;
+          const agents = Object.entries(agentsObject)
+            .map(([agentId, agentState]) => {
+              const rawWorkplans: Record<string, unknown> =
+                isRecord(agentState) && isRecord(agentState.workplans)
+                  ? (agentState.workplans as Record<string, unknown>)
+                  : {};
+
+              const workplans = Object.entries(rawWorkplans)
+                .map(([workplanId, ticket]) => {
+                  const hasTicket = hasTicketGoal(ticket);
+                  return {
+                    workplanId,
+                    goal: hasTicket ? String(ticket.goal) : undefined,
+                    hasTicket
+                  };
+                })
+                .sort((a, b) => a.workplanId.localeCompare(b.workplanId));
+
+              return { agentId, workplans };
+            })
+            .sort((a, b) => a.agentId.localeCompare(b.agentId));
+
+          return { agents };
+        }
+
+        // Legacy support: pre-agent schema
+        if (isRecord(actualWorkPlan) && isRecord(actualWorkPlan.workplans)) {
+          const rawWorkplans = actualWorkPlan.workplans as Record<string, unknown>;
+          const workplans = Object.entries(rawWorkplans)
+            .map(([workplanId, ticket]) => {
+              const hasTicket = hasTicketGoal(ticket);
+              return {
+                workplanId,
+                goal: hasTicket ? String(ticket.goal) : undefined,
+                hasTicket
+              };
+            })
+            .sort((a, b) => a.workplanId.localeCompare(b.workplanId));
+
+          return { agents: [{ agentId: 'legacy', workplans }] };
+        }
+
+        // Legacy support: currentTicket schema
+        if (isRecord(actualWorkPlan) && 'currentTicket' in actualWorkPlan && actualWorkPlan.currentTicket) {
+          const ticket = (actualWorkPlan as Record<string, unknown>).currentTicket;
+          const hasTicket = hasTicketGoal(ticket);
+          return {
+            agents: [{
+              agentId: 'legacy',
+              workplans: [{ workplanId: 'legacy', goal: hasTicket ? String(ticket.goal) : undefined, hasTicket }]
+            }]
+          };
+        }
+
+        return { agents: [] };
+      })();
+
+      setWorkplanCatalog(catalog);
+
+      const resolvedTicket = (() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const requestedAgentId = urlParams.get('agentId');
+        const requestedWorkplanId = urlParams.get('workplanId');
+
+        if (actualWorkPlan && typeof actualWorkPlan === 'object') {
+          if (actualWorkPlan.currentTicket) {
+            return actualWorkPlan.currentTicket;
+          }
+
+          if (actualWorkPlan.workplans && typeof actualWorkPlan.workplans === 'object') {
+            const workplanIds = Object.keys(actualWorkPlan.workplans);
+
+            if (requestedWorkplanId && actualWorkPlan.workplans[requestedWorkplanId]) {
+              return actualWorkPlan.workplans[requestedWorkplanId];
+            }
+
+            if (workplanIds.length === 1) {
+              return actualWorkPlan.workplans[workplanIds[0]];
+            }
+
+            return null;
+          }
+
+          if (actualWorkPlan.agents && typeof actualWorkPlan.agents === 'object') {
+            const agentIds = Object.keys(actualWorkPlan.agents);
+            const resolvedAgent = (() => {
+              if (requestedAgentId && actualWorkPlan.agents[requestedAgentId]) {
+                return actualWorkPlan.agents[requestedAgentId];
+              }
+
+              if (agentIds.length === 1) {
+                return actualWorkPlan.agents[agentIds[0]];
+              }
+
+              return null;
+            })();
+
+            if (!resolvedAgent || typeof resolvedAgent !== 'object') {
+              return null;
+            }
+
+            if (resolvedAgent.workplans && typeof resolvedAgent.workplans === 'object') {
+              const workplanIds = Object.keys(resolvedAgent.workplans);
+
+              if (requestedWorkplanId && resolvedAgent.workplans[requestedWorkplanId]) {
+                return resolvedAgent.workplans[requestedWorkplanId];
+              }
+
+              if (workplanIds.length === 1) {
+                return resolvedAgent.workplans[workplanIds[0]];
+              }
+            }
+
+            return null;
+          }
+        }
+
+        return null;
+      })();
+
+      // If nothing selected or selection is ambiguous, we show the dashboard instead of erroring.
+      if (!resolvedTicket || resolvedTicket === 'noTicket') {
+        setWorkplan(null);
+        setLastLoadedTime(new Date());
+        setLoadError(null);
+        return;
+      }
       
       // Data structure conversion
       const convertedWorkPlan: WorkPlan = {
-        goal: actualWorkPlan.currentTicket.goal,
-        prPlans: actualWorkPlan.currentTicket.pullRequests.map((pr: {
+        goal: resolvedTicket.goal,
+        prPlans: resolvedTicket.pullRequests.map((pr: {
           goal: string;
           status: string;
           developerNote?: string;
@@ -135,6 +285,14 @@ function App() {
       setIsLoading(false);
     }
   }, []);
+
+  const openWorkplan = useCallback((agentId: string, workplanId: string) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('agentId', agentId);
+    url.searchParams.set('workplanId', workplanId);
+    window.history.pushState({}, '', url.toString());
+    loadData();
+  }, [loadData]);
 
   // Get data from JSON file on initial load
   useEffect(() => {
@@ -419,7 +577,7 @@ function App() {
   const draftSecondsForSelection = draftSecondsValid ? Math.round(parsedDraftSeconds) : currentPollingSeconds;
 
   // Fallback display for errors
-  if (loadError || !workplan) {
+  if (loadError) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
         <div className="text-center p-8 max-w-md">
@@ -437,6 +595,77 @@ function App() {
             Reload
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (!workplan) {
+    return (
+      <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+        <header className="app-topbar">
+          <div className="topbar-inner">
+            <div className="topbar-brand">
+              <div className="topbar-title">Workplans</div>
+              <div className="topbar-subtitle" title="Select an agent and workplan">
+                Select an agent and workplan
+              </div>
+            </div>
+
+            <div className="topbar-actions">
+              <button
+                onClick={toggleThemeMode}
+                className="morphic-btn morphic-btn--icon"
+                aria-label="Toggle theme"
+                title="Toggle theme"
+              >
+                {themeMode === 'system' ? <Monitor size={16} /> : themeMode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-5xl mx-auto px-6 py-8">
+            <div className="morphic-panel">
+              <div className="morphic-panel-title">Dashboard</div>
+              <div className="text-sm opacity-80 mb-4">
+                {lastLoadedTime ? `Last updated: ${lastLoadedTime.toLocaleTimeString()}` : 'Loading...'}
+              </div>
+
+              <div className="space-y-6">
+                {(workplanCatalog?.agents ?? []).map((agent) => (
+                  <div key={agent.agentId} className="morphic-subpanel">
+                    <div className="font-semibold mb-3">{agent.agentId}</div>
+                    {agent.workplans.length === 0 ? (
+                      <div className="text-sm opacity-70">No workplans</div>
+                    ) : (
+                      <div className="grid gap-2">
+                        {agent.workplans.map((wp) => (
+                          <button
+                            key={`${agent.agentId}:${wp.workplanId}`}
+                            type="button"
+                            className="morphic-row-button"
+                            onClick={() => openWorkplan(agent.agentId, wp.workplanId)}
+                            disabled={!wp.hasTicket}
+                            title={wp.hasTicket ? 'Open workplan' : 'No ticket planned for this workplan'}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="min-w-0">
+                                <div className="font-medium truncate">{wp.workplanId}</div>
+                                <div className="text-sm opacity-75 truncate">{wp.goal ?? 'No ticket'}</div>
+                              </div>
+                              <div className="opacity-70">›</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }

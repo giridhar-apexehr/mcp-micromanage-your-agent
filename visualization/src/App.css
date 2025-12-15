@@ -1189,6 +1189,132 @@ header {
   padding-right: 8px;
 }
 
+.morphic-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(165%);
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.06) inset;
+  padding: 18px;
+}
+
+.morphic-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(59, 130, 246, 0.12), transparent 62%);
+  pointer-events: none;
+}
+
+.morphic-panel::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  top: -45%;
+  width: 140%;
+  height: 120%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.00) 45%);
+  transform: rotate(6deg);
+  opacity: 0.30;
+  pointer-events: none;
+}
+
+.dark-mode .morphic-panel {
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(15, 23, 42, 0.30);
+  backdrop-filter: blur(18px) saturate(175%);
+  -webkit-backdrop-filter: blur(18px) saturate(175%);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.40) inset;
+}
+
+.dark-mode .morphic-panel::before {
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(226, 232, 240, 0.16), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(96, 165, 250, 0.10), transparent 62%);
+}
+
+.dark-mode .morphic-panel::after {
+  opacity: 0.20;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.18), rgba(226, 232, 240, 0.00) 45%);
+}
+
+.morphic-panel-title {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.72);
+  margin-bottom: 10px;
+}
+
+.dark-mode .morphic-panel-title {
+  color: rgba(226, 232, 240, 0.72);
+}
+
+.morphic-subpanel {
+  position: relative;
+  z-index: 1;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(255, 255, 255, 0.10);
+  padding: 14px;
+}
+
+.dark-mode .morphic-subpanel {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.22);
+}
+
+.morphic-row-button {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  text-align: left;
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.morphic-row-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.30);
+  box-shadow:
+    0 14px 24px rgba(15, 23, 42, 0.10),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset;
+}
+
+.dark-mode .morphic-row-button {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.22);
+}
+
+.dark-mode .morphic-row-button:hover:not(:disabled) {
+  border-color: rgba(96, 165, 250, 0.24);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
  .morphic-split {
   display: inline-flex;
   align-items: stretch;
