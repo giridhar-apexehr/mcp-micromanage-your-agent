@@ -176,10 +176,17 @@ function App() {
 
       setWorkplanCatalog(catalog);
 
+      const selectionState = window.history.state as { selected?: boolean } | null;
+      const selectedByUser = selectionState?.selected === true;
+
       const resolvedTicket = (() => {
         const urlParams = new URLSearchParams(window.location.search);
         const requestedAgentId = urlParams.get('agentId');
         const requestedWorkplanId = urlParams.get('workplanId');
+
+        if (!selectedByUser) {
+          return null;
+        }
 
         if (actualWorkPlan && typeof actualWorkPlan === 'object') {
           if (actualWorkPlan.currentTicket) {
@@ -187,30 +194,17 @@ function App() {
           }
 
           if (actualWorkPlan.workplans && typeof actualWorkPlan.workplans === 'object') {
-            const workplanIds = Object.keys(actualWorkPlan.workplans);
-
             if (requestedWorkplanId && actualWorkPlan.workplans[requestedWorkplanId]) {
               return actualWorkPlan.workplans[requestedWorkplanId];
             }
-
-            if (workplanIds.length === 1) {
-              return actualWorkPlan.workplans[workplanIds[0]];
-            }
-
             return null;
           }
 
           if (actualWorkPlan.agents && typeof actualWorkPlan.agents === 'object') {
-            const agentIds = Object.keys(actualWorkPlan.agents);
             const resolvedAgent = (() => {
               if (requestedAgentId && actualWorkPlan.agents[requestedAgentId]) {
                 return actualWorkPlan.agents[requestedAgentId];
               }
-
-              if (agentIds.length === 1) {
-                return actualWorkPlan.agents[agentIds[0]];
-              }
-
               return null;
             })();
 
@@ -219,14 +213,8 @@ function App() {
             }
 
             if (resolvedAgent.workplans && typeof resolvedAgent.workplans === 'object') {
-              const workplanIds = Object.keys(resolvedAgent.workplans);
-
               if (requestedWorkplanId && resolvedAgent.workplans[requestedWorkplanId]) {
                 return resolvedAgent.workplans[requestedWorkplanId];
-              }
-
-              if (workplanIds.length === 1) {
-                return resolvedAgent.workplans[workplanIds[0]];
               }
             }
 
@@ -290,7 +278,7 @@ function App() {
     const url = new URL(window.location.href);
     url.searchParams.set('agentId', agentId);
     url.searchParams.set('workplanId', workplanId);
-    window.history.pushState({}, '', url.toString());
+    window.history.pushState({ selected: true }, '', url.toString());
     loadData();
   }, [loadData]);
 
@@ -298,7 +286,7 @@ function App() {
     const url = new URL(window.location.href);
     url.searchParams.delete('agentId');
     url.searchParams.delete('workplanId');
-    window.history.pushState({}, '', url.toString());
+    window.history.pushState({ selected: false }, '', url.toString());
     setShowAutoRefreshPanel(false);
     setIsAutoRefreshPanelRendered(false);
     setShowFilterPanel(false);

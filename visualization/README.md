@@ -69,8 +69,10 @@ npm run build
 }
 ```
 
-複数の agent / workplan が存在する場合は、URL クエリで対象を指定してください：
-`?agentId=<agentId>&workplanId=<workplanId>`
+起動時はダッシュボードが表示されます。
+
+- ダッシュボードで `agentId` と `workplanId` を選択すると、該当ワークプラン画面が開きます。
+- ワークプラン画面からは「Back to dashboard」でダッシュボードに戻れます。
 
 `currentTicket` を含む旧形式（legacy）も読み込み可能です。
 
