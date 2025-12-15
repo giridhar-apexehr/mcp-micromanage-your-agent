@@ -31,6 +31,12 @@ export const taskPlanningGuide = {
 - Each commit should represent an atomic change within its PR
 - To minimize dependencies between PRs, ideally making them independently implementable
 
+## Multiple Workplans
+- This toolset supports multiple agents and multiple workplans.
+- \`agentId\` is required on every tool call.
+- \`workplanId\` is required on every tool call.
+- The planning and status transition rules apply **within the selected (agentId, workplanId)**.
+
 ## Method
 ### Analysis Phase
 - Analyze the task's architecture requirements thoroughly
@@ -83,6 +89,10 @@ export const progressInstructionGuide = {
   2. Format the review request message in a structured way with clear section headings
   3. Remember that tasks cannot transition directly from other states to "completed" - they must go through "user_review" first
   4. Only users can transition tasks from "user_review" to "completed" after their review
+
+  **Multiple Workplans**:
+  - If the progress report includes \`agentId\` and \`workplanId\`, treat that tuple as the scope for all status invariants and next-step suggestions.
+  - If you need to manage more than one plan in parallel, explicitly pick an \`agentId\` and \`workplanId\` and keep discussions and updates scoped to it.
 
   **Always secure the user's agreement before starting the next task.**
 `};

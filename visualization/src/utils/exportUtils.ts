@@ -4,6 +4,7 @@ import { WorkPlan, CommitStatus } from '../types';
 const STATUS_LABELS: Record<CommitStatus, string> = {
   'not_started': 'Not Started',
   'in_progress': 'In Progress',
+  'blocked': 'Blocked',
   'completed': 'Completed',
   'cancelled': 'Cancelled',
   'needsRefinment': 'Needs Refinement',
@@ -14,6 +15,7 @@ const STATUS_LABELS: Record<CommitStatus, string> = {
 const STATUS_ICONS: Record<CommitStatus, string> = {
   'not_started': '⚪',
   'in_progress': '🔄',
+  'blocked': '⛔',
   'completed': '✅',
   'cancelled': '❌',
   'needsRefinment': '⚠️',

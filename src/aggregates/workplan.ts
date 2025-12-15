@@ -54,19 +54,33 @@ const handleFileOperationError = (operation: string, error: unknown): void => {
 };
 
 // WorkPlanの状態をJSON形式で表現するインターフェース
+export interface AgentWorkPlanState {
+  workplans: Record<string, Ticket | "noTicket">;
+}
+
 export interface WorkPlanState {
-  currentTicket: Ticket | "noTicket";
+  agents: Record<string, AgentWorkPlanState>;
   lastUpdated?: string;     // 最終更新日時
   version?: string;         // データ形式のバージョン
 }
 
+const createMigratedAgentId = (suffix: string): string => {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `migrated_agent_${suffix}_${stamp}`;
+};
+
+const createMigratedWorkplanId = (suffix: string): string => {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `migrated_${suffix}_${stamp}`;
+};
+
 // aggregate
 export class WorkPlan {
   // state
-  private currentTicket: Ticket | "noTicket" = "noTicket";
+  private agents: Record<string, AgentWorkPlanState> = {};
   private initialized: boolean = false;
   private lastUpdated: string = new Date().toISOString();
-  private readonly version: string = "1.0.0"; // データ形式のバージョン
+  private readonly version: string = "3.0.0"; // データ形式のバージョン
   
   constructor(options?: WorkPlanInitOptions) {
     // 初期化オプションの処理
@@ -125,29 +139,103 @@ export class WorkPlan {
     try {
       logger.info('Loading WorkPlan state from file');
       const defaultState: WorkPlanState = {
-        currentTicket: "noTicket",
+        agents: {},
         lastUpdated: this.lastUpdated,
         version: this.version
       };
-      
-      const savedState = fileStorage.loadFromFile<WorkPlanState>(defaultState);
-      
-      // 読み込んだ状態をクラスに適用
-      this.currentTicket = savedState.currentTicket;
-      this.lastUpdated = savedState.lastUpdated || new Date().toISOString();
-      
-      // バージョンチェック (将来の互換性のため)
-      if (savedState.version && savedState.version !== this.version) {
-        logger.warn(`Data version mismatch: file=${savedState.version}, current=${this.version}`);
-      }
-      
-      logger.info(`WorkPlan state loaded from file: ${fileStorage.getDataFilePath()}`);
-      
-      if (this.currentTicket === "noTicket") {
-        logger.info('No active ticket found in loaded state');
+
+      const savedStateRaw = fileStorage.loadFromFile<unknown>(defaultState);
+
+      const savedState = savedStateRaw as Partial<WorkPlanState> & {
+        // legacy
+        currentTicket?: Ticket | "noTicket";
+        // pre-agent multi-workplan schema
+        workplans?: Record<string, Ticket | "noTicket">;
+        activeWorkplanId?: string | null;
+        // legacy agent schema fields
+        activeAgentId?: string | null;
+      };
+
+      const hasAgentsSchema = typeof savedState.agents !== 'undefined' && savedState.agents !== null;
+      const hasWorkplansSchema = typeof savedState.workplans !== 'undefined' && savedState.workplans !== null;
+      const hasLegacySchema = typeof savedState.currentTicket !== 'undefined' && !hasAgentsSchema && !hasWorkplansSchema;
+
+      if (hasAgentsSchema) {
+        const rawAgents = savedState.agents && typeof savedState.agents === 'object'
+          ? (savedState.agents as Record<string, unknown>)
+          : defaultState.agents;
+
+        // Normalize shape and drop any persisted "active" fields
+        this.agents = Object.fromEntries(
+          Object.entries(rawAgents).map(([agentId, agentState]) => {
+            const maybeState = agentState as Partial<AgentWorkPlanState> & {
+              activeWorkplanId?: string | null;
+            };
+            return [agentId, { workplans: maybeState.workplans ?? {} } satisfies AgentWorkPlanState];
+          })
+        );
+
+        this.lastUpdated = savedState.lastUpdated || new Date().toISOString();
+
+        // バージョンチェック (将来の互換性のため)
+        if (savedState.version && savedState.version !== this.version) {
+          logger.warn(`Data version mismatch: file=${savedState.version}, current=${this.version}`);
+        }
+      } else if (hasWorkplansSchema) {
+        const migratedAgentId = createMigratedAgentId('workplans');
+        const migratedAgentState: AgentWorkPlanState = {
+          workplans: savedState.workplans && typeof savedState.workplans === 'object'
+            ? (savedState.workplans as Record<string, Ticket | "noTicket">)
+            : {},
+        };
+
+        // Remove implicit "default" workplan key if present
+        if (Object.prototype.hasOwnProperty.call(migratedAgentState.workplans, 'default')) {
+          const migratedId = createMigratedWorkplanId('default');
+          const defaultTicket = migratedAgentState.workplans['default'];
+          delete migratedAgentState.workplans['default'];
+          migratedAgentState.workplans[migratedId] = defaultTicket;
+        }
+
+        const migratedState: WorkPlanState = {
+          agents: { [migratedAgentId]: migratedAgentState },
+          lastUpdated: savedState.lastUpdated || this.lastUpdated,
+          version: this.version
+        };
+
+        this.agents = migratedState.agents;
+        this.lastUpdated = migratedState.lastUpdated || new Date().toISOString();
+
+        logger.info('Pre-agent workplan schema detected; migrated to agent-scoped format');
+        this.saveState();
+      } else if (hasLegacySchema) {
+        const migratedAgentId = createMigratedAgentId('legacy');
+        const migratedWorkplanId = createMigratedWorkplanId('legacy');
+        const migratedState: WorkPlanState = {
+          agents: {
+            [migratedAgentId]: {
+              workplans: { [migratedWorkplanId]: savedState.currentTicket ?? "noTicket" }
+            }
+          },
+          lastUpdated: savedState.lastUpdated || this.lastUpdated,
+          version: this.version
+        };
+
+        this.agents = migratedState.agents;
+        this.lastUpdated = migratedState.lastUpdated || new Date().toISOString();
+
+        logger.info('Legacy single-ticket schema detected; migrated to agent-scoped format');
+        this.saveState();
       } else {
-        const ticket = this.currentTicket;
-        logger.info(`Loaded ticket with goal: ${ticket.goal}, ${ticket.pullRequests.length} PRs`);
+        this.agents = defaultState.agents;
+        this.lastUpdated = savedState.lastUpdated || new Date().toISOString();
+      }
+
+      logger.info(`WorkPlan state loaded from file: ${fileStorage.getDataFilePath()}`);
+
+      const agentCount = Object.keys(this.agents).length;
+      if (!agentCount) {
+        logger.info('No agents found in loaded state');
       }
     } catch (error) {
       handleFileOperationError('loading state from file', error);
@@ -163,7 +251,7 @@ export class WorkPlan {
       this.lastUpdated = new Date().toISOString();
       
       const state: WorkPlanState = {
-        currentTicket: this.currentTicket,
+        agents: this.agents,
         lastUpdated: this.lastUpdated,
         version: this.version
       };
@@ -184,19 +272,35 @@ export class WorkPlan {
   }
 
   // commands
-  public plan(input: PlanTaskInput): { content: Array<{ type: string; text: string }>; isError?: boolean } {
+  public plan(input: PlanTaskInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       // 初期化チェック
       if (!this.initialized) {
         return errorResponse('WorkPlan is not initialized. Call initialize() first.');
       }
+
+      if (!agentId || !String(agentId).trim()) {
+        return errorResponse('agentId is required. Provide a unique identifier for the calling agent.');
+      }
+
+      if (!workplanId || !String(workplanId).trim()) {
+        return errorResponse('workplanId is required. Provide a unique identifier for this workplan.');
+      }
       
       logger.info(`Creating plan with goal: ${input.goal}, ${input.prPlans.length} PRs`);
       const newTicket = planTicket(input);
-      
-      const isReplacing = this.currentTicket !== "noTicket";
-      
-      this.currentTicket = newTicket;
+
+      const agentState: AgentWorkPlanState = this.agents[agentId] ?? { workplans: {} };
+      const existing = agentState.workplans[workplanId] ?? "noTicket";
+      const isReplacing = existing !== "noTicket";
+
+      this.agents = {
+        ...this.agents,
+        [agentId]: {
+          ...agentState,
+          workplans: { ...agentState.workplans, [workplanId]: newTicket }
+        }
+      };
       
       // 状態をファイルに保存
       const saveSuccess = this.saveState();
@@ -213,6 +317,8 @@ export class WorkPlan {
         content: [{
           type: "text",
           text: JSON.stringify({
+            agentId,
+            workplanId,
             prCount: newTicket.pullRequests.length,
             commitCount: newTicket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0),
             message,
@@ -227,7 +333,7 @@ export class WorkPlan {
     }
   }
 
-  public trackProgress(): { content: Array<{ type: string; text: string }>; isError?: boolean } {
+  public trackProgress(agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       // 初期化チェック
       if (!this.initialized) {
@@ -235,7 +341,21 @@ export class WorkPlan {
       }
       
       logger.info('Tracking progress');
-      const ticketCheck = ensureTicketExists(this.currentTicket);
+
+      if (!agentId || !String(agentId).trim()) {
+        return errorResponse('agentId is required.');
+      }
+
+      if (!workplanId || !String(workplanId).trim()) {
+        return errorResponse('workplanId is required.');
+      }
+
+      const agentState = this.agents[agentId];
+      if (!agentState) {
+        return errorResponse(`No agent found for agentId: ${agentId}`);
+      }
+
+      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket");
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -279,6 +399,8 @@ export class WorkPlan {
         content: [{
           type: "text",
           text: JSON.stringify({
+            agentId,
+            workplanId,
             goal: ticket.goal,
             progress: {
               prs: `${completedPRs}/${totalPRs}`,
@@ -303,7 +425,7 @@ export class WorkPlan {
   }
 
   // Method to update status
-  public updateStatus(input: UpdateStatusInput): { content: Array<{ type: string; text: string }>; isError?: boolean } {
+  public updateStatus(input: UpdateStatusInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       // 初期化チェック
       if (!this.initialized) {
@@ -311,7 +433,21 @@ export class WorkPlan {
       }
       
       logger.info(`Updating status for PR #${input.prIndex}, commit #${input.commitIndex} to "${input.status}"`);
-      const ticketCheck = ensureTicketExists(this.currentTicket, true);
+
+      if (!agentId || !String(agentId).trim()) {
+        return errorResponse('agentId is required.');
+      }
+
+      if (!workplanId || !String(workplanId).trim()) {
+        return errorResponse('workplanId is required.');
+      }
+
+      const agentState = this.agents[agentId];
+      if (!agentState) {
+        return errorResponse(`No agent found for agentId: ${agentId}`);
+      }
+
+      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -346,6 +482,8 @@ export class WorkPlan {
               type: "text",
               text: JSON.stringify({
                 message: `PR #${prIndex} ${changes.join(" and ")}.`,
+                agentId,
+                workplanId,
                 prIndex: prIndex,
                 developerNote: input.developerNote,
                 persistenceStatus: saveSuccess ? 'saved' : 'memory_only',
@@ -434,6 +572,8 @@ export class WorkPlan {
           type: "text",
           text: JSON.stringify({
             message: `Commit #${commitIndex} ${changes.join(" and ")}.`,
+            agentId,
+            workplanId,
             prIndex: prIndex,
             commitIndex: commitIndex,
             status: input.status,

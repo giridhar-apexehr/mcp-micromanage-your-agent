@@ -28,6 +28,18 @@ If [sequentialthinking](https://github.com/modelcontextprotocol/servers/tree/mai
 2. **track**: Monitor progress and current status of all work items
 3. **update**: Change status as work progresses, with mandatory user reviews
 
+### Multiple Workplans
+
+This server supports multiple workplans stored under a `workplanId`.
+
+### Multiple Agents
+
+This server supports multiple agents identified by an `agentId`.
+
+- `agentId` is required on every tool call.
+- `workplanId` is required on every tool call.
+- Status/progress invariants are scoped to a single `(agentId, workplanId)`.
+
 ## Visualization Dashboard
 
 The project includes a React-based visualization tool that provides:

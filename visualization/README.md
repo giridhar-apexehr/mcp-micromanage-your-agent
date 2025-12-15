@@ -43,25 +43,38 @@ npm run build
 
 ```json
 {
-  "currentTicket": {
-    "goal": "チケットの目標",
-    "pullRequests": [
-      {
-        "goal": "PRの目標",
-        "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment",
-        "commits": [
-          {
-            "goal": "コミットの目標",
-            "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment"
-          }
-        ]
+  "agents": {
+    "<agentId>": {
+      "workplans": {
+        "<workplanId>": {
+          "goal": "チケットの目標",
+          "pullRequests": [
+            {
+              "goal": "PRの目標",
+              "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment|user_review",
+              "commits": [
+                {
+                  "goal": "コミットの目標",
+                  "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment|user_review"
+                }
+              ]
+            }
+          ]
+        }
       }
-    ]
+    }
   },
   "lastUpdated": "2023-03-23T11:19:23.960Z",
-  "version": "1.0.0"
+  "version": "3.0.0"
 }
 ```
+
+起動時はダッシュボードが表示されます。
+
+- ダッシュボードで `agentId` と `workplanId` を選択すると、該当ワークプラン画面が開きます。
+- ワークプラン画面からは「Back to dashboard」でダッシュボードに戻れます。
+
+`currentTicket` を含む旧形式（legacy）も読み込み可能です。
 
 ## 機能
 - PR（グループノード）とコミット（子ノード）の階層構造表示

@@ -19,6 +19,8 @@ export const PLAN_TOOL: Tool<{
     developerNote?: z.ZodOptional<z.ZodString>;
   }>>;
   needsMoreThoughts: z.ZodOptional<z.ZodBoolean>;
+  agentId: z.ZodString;
+  workplanId: z.ZodString;
 }> = {
   name: "plan",
   description: `
@@ -48,7 +50,9 @@ export const PLAN_TOOL: Tool<{
       developerNote: z.string().max(300, developerNoteLengthErrorMessage).optional()
         .describe("Developer implementation notes for this PR. Use this field for detailed implementation considerations and technical context discovered during refinement.")
     })).min(1, "At least one PR plan is required").describe("Array of PR plans. Each PR represents a logical unit of work in the implementation plan."),
-    needsMoreThoughts: z.boolean().optional().describe("Whether this plan might need further refinement. Set to true if you think the plan may need changes.")
+    needsMoreThoughts: z.boolean().optional().describe("Whether this plan might need further refinement. Set to true if you think the plan may need changes."),
+    agentId: z.string().min(1, "agentId must be a non-empty string").describe("Required identifier for the calling agent. Must be provided on every tool call."),
+    workplanId: z.string().min(1, "workplanId must be a non-empty string").describe("Required identifier for which workplan to create/update. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.")
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {
@@ -76,8 +80,8 @@ export const PLAN_TOOL: Tool<{
         })),
         needsMoreThoughts: params.needsMoreThoughts
       };
-      
-      const result = workPlan.plan(planParams);
+
+      const result = workPlan.plan(planParams, String(params.agentId), String(params.workplanId));
       
       return {
         content: result.content.map(item => ({
