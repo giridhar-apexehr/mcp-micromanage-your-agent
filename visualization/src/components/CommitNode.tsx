@@ -90,7 +90,7 @@ function CommitNode({ data }: { data: CommitNodeData }) {
       
       {/* Developer Note Tooltip */}
       {showTooltip && data.developerNote && (
-        <div className="absolute z-10 bg-white dark:bg-gray-800 p-3 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 left-0 right-0 bottom-full mb-2 text-sm">
+        <div className="absolute z-10 bg-white dark:bg-gray-800 p-3 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 w-max max-w-full -translate-x-1/2 left-1/2 bottom-full mb-2 text-sm">
           <div className="font-semibold mb-1 text-gray-700 dark:text-gray-300">Developer Note:</div>
           <div className="text-gray-600 dark:text-gray-400">{data.developerNote}</div>
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8 border-t-gray-200 dark:border-t-gray-700"></div>
