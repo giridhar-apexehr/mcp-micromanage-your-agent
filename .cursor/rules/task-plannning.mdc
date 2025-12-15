@@ -17,10 +17,11 @@ alwaysApply: false
 - To minimize dependencies between PRs, ideally making them independently implementable
 
 ## Multiple Workplans
-- This toolset supports multiple agents and multiple workplans.
-- `agentId` is required on every tool call.
-- `workplanId` is required on every tool call.
-- Plan creation and the status/progress rules apply **within the selected (agentId, workplanId)**.
+- This toolset supports multiple agents and multiple workplans, but all planning/status rules are scoped to a **single (agentId, workplanId)**.
+- Required inputs: every tool call must include both `agentId` and `workplanId`.
+- Default behavior: keep using the same `(agentId, workplanId)` for the current ticket/thread; do **not** create/switch workplans per prompt.
+- Switch/create a different `workplanId` only when the user explicitly starts a new ticket/workplan or explicitly requests a switch.
+- If the correct `(agentId, workplanId)` is unclear, ask the user rather than guessing or creating a new workplan.
 
 ## Method
 ### Analysis Phase

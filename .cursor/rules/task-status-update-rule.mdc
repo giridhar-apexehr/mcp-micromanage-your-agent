@@ -2,13 +2,18 @@
 description: Always When updating the status of a task
 globs: 
 alwaysApply: false
----
+
     **STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:**
-    There is always exactly one task in either the in_progress or user_review state.
-    
-    **Multiple Workplans**:
-    - If multiple agents/workplans are used, the invariants in this document apply **within the selected (agentId, workplanId)**.
-    - When you are managing more than one plan in parallel, explicitly specify which `agentId` and `workplanId` you are updating/tracking.
+
+    **Scope (multiple agents/workplans):**
+    - All rules and invariants in this document apply **within a single selected (agentId, workplanId)**.
+    - The invariant "exactly one task is in either `in_progress` or `user_review`" is **per (agentId, workplanId)** (not global across all agents/workplans).
+
+    **When operating across multiple workplans:**
+    - Always explicitly specify which `agentId` and `workplanId` you are updating/tracking.
+    - Default behavior: keep using the same `(agentId, workplanId)` for the current ticket/thread; do **not** create/switch workplans per prompt.
+    - If it is unclear which `(agentId, workplanId)` applies, ask the user rather than guessing.
+
     Before updating the status, we guarantee that each condition is met.
 
     needsRefinment → in_progress conditions:
