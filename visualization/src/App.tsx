@@ -4,6 +4,7 @@ import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { WorkPlan, CommitStatus } from './types'
+import { useThemeMode } from './app/hooks/useThemeMode'
 import { buildWorkplanCatalog, WorkplanCatalog } from './app/utils/workplanCatalog'
 import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
@@ -48,28 +49,8 @@ function App() {
     searchQuery: '',
     onlyShowActive: false
   });
-  
-  type ThemeMode = 'system' | 'light' | 'dark';
 
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    const savedThemeMode = localStorage.getItem('themeMode');
-    if (savedThemeMode === 'system' || savedThemeMode === 'light' || savedThemeMode === 'dark') {
-      return savedThemeMode;
-    }
-
-    const legacyDarkMode = localStorage.getItem('darkMode');
-    if (legacyDarkMode !== null) {
-      return legacyDarkMode === 'true' ? 'dark' : 'light';
-    }
-
-    return 'system';
-  });
-
-  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() =>
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  );
-
-  const isDarkMode = themeMode === 'dark' ? true : themeMode === 'light' ? false : systemPrefersDark;
+  const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode();
 
   // Separate data loading function for reusability
   const loadData = useCallback(async () => {
@@ -268,36 +249,6 @@ function App() {
     localStorage.setItem('pollingIntervalMs', String(pollingIntervalMs));
     setDraftPollingSeconds(String(Math.max(1, Math.round(pollingIntervalMs / 1000))));
   }, [pollingIntervalMs]);
-  
-  // Add/remove class from html tag when theme setting changes
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-    
-    localStorage.setItem('themeMode', themeMode);
-  }, [isDarkMode, themeMode]);
-
-  useEffect(() => {
-    if (themeMode !== 'system') return;
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (event: MediaQueryListEvent) => {
-      setSystemPrefersDark(event.matches);
-    };
-
-    setSystemPrefersDark(mediaQuery.matches);
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-
-    mediaQuery.addListener(handleChange);
-    return () => mediaQuery.removeListener(handleChange);
-  }, [themeMode]);
 
   // Filter options change handler
   const handleFilterChange = useCallback((newOptions: FilterOptions) => {
@@ -491,14 +442,6 @@ function App() {
     };
   }, [showFilterPanel, updateFilterPanelPosition]);
   
-  const toggleThemeMode = useCallback(() => {
-    setThemeMode((prev) => {
-      if (prev === 'system') return 'dark';
-      if (prev === 'dark') return 'light';
-      return 'system';
-    });
-  }, []);
-
   // Polling settings toggle handler
   const togglePolling = useCallback(() => {
     setPollingEnabled(prev => !prev);
