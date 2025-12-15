@@ -5,6 +5,7 @@ import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { useThemeMode } from './app/hooks/useThemeMode'
 import { useWorkplanData } from './app/hooks/useWorkplanData'
+import { usePolling } from './app/hooks/usePolling'
 import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
 
@@ -19,18 +20,18 @@ function App() {
     openWorkplan,
     goToDashboard: goToDashboardBase
   } = useWorkplanData();
-  // Polling interval (milliseconds)
-  const [pollingIntervalMs, setPollingIntervalMs] = useState<number>(() => {
-    const saved = localStorage.getItem('pollingIntervalMs');
-    const parsed = saved ? Number(saved) : NaN;
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
-    return 1000;
-  });
-  // Whether polling is enabled
-  const [pollingEnabled, setPollingEnabled] = useState<boolean>(true);
+  const {
+    pollingEnabled,
+    togglePolling,
+    setPollingIntervalMs,
+    draftPollingSeconds,
+    setDraftPollingSeconds,
+    currentPollingSeconds,
+    parsedDraftSeconds,
+    draftSecondsValid,
+    draftSecondsForSelection
+  } = usePolling({ loadData });
   const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0);
-  // Track last polling attempt
-  const pollingTimeoutRef = useRef<number | null>(null);
   const [showAutoRefreshPanel, setShowAutoRefreshPanel] = useState<boolean>(false);
   const autoRefreshAnchorRef = useRef<HTMLDivElement | null>(null);
   const autoRefreshButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -38,8 +39,7 @@ function App() {
   const [autoRefreshPanelPosition, setAutoRefreshPanelPosition] = useState<{ top: number; left: number } | null>(null);
   const [isAutoRefreshPanelRendered, setIsAutoRefreshPanelRendered] = useState<boolean>(false);
   const autoRefreshPanelCloseTimeoutRef = useRef<number | null>(null);
-  const [draftPollingSeconds, setDraftPollingSeconds] = useState<string>(() => String(Math.max(1, Math.round(pollingIntervalMs / 1000))));
-  
+
   const [showFilterPanel, setShowFilterPanel] = useState<boolean>(false);
   const filterButtonRef = useRef<HTMLButtonElement | null>(null);
   const [filterPanelPosition, setFilterPanelPosition] = useState<{ top: number; left: number } | null>(null);
@@ -63,44 +63,8 @@ function App() {
 
   // Get data from JSON file on initial load
   useEffect(() => {
-    // Initial load
     loadData();
-    
-    // Set up polling
-    const setupPolling = () => {
-      if (pollingTimeoutRef.current) {
-        clearTimeout(pollingTimeoutRef.current);
-        pollingTimeoutRef.current = null;
-      }
-      
-      if (pollingEnabled && pollingIntervalMs > 0) {
-        pollingTimeoutRef.current = window.setTimeout(() => {
-          // Load data, then schedule next polling
-          loadData().finally(() => {
-            if (pollingEnabled) {
-              setupPolling();
-            }
-          });
-        }, pollingIntervalMs);
-      }
-    };
-    
-    // Start polling
-    setupPolling();
-    
-    // Clean up on component unmount
-    return () => {
-      if (pollingTimeoutRef.current) {
-        clearTimeout(pollingTimeoutRef.current);
-        pollingTimeoutRef.current = null;
-      }
-    };
-  }, [loadData, pollingEnabled, pollingIntervalMs]);
-
-  useEffect(() => {
-    localStorage.setItem('pollingIntervalMs', String(pollingIntervalMs));
-    setDraftPollingSeconds(String(Math.max(1, Math.round(pollingIntervalMs / 1000))));
-  }, [pollingIntervalMs]);
+  }, [loadData]);
 
   // Filter options change handler
   const handleFilterChange = useCallback((newOptions: FilterOptions) => {
@@ -294,16 +258,7 @@ function App() {
     };
   }, [showFilterPanel, updateFilterPanelPosition]);
   
-  // Polling settings toggle handler
-  const togglePolling = useCallback(() => {
-    setPollingEnabled(prev => !prev);
-  }, []);
-
   const AUTO_REFRESH_PRESETS_SECONDS = [1, 2, 5, 10, 30, 60];
-  const currentPollingSeconds = Math.max(1, Math.round(pollingIntervalMs / 1000));
-  const parsedDraftSeconds = Number(draftPollingSeconds);
-  const draftSecondsValid = Number.isFinite(parsedDraftSeconds) && parsedDraftSeconds > 0;
-  const draftSecondsForSelection = draftSecondsValid ? Math.round(parsedDraftSeconds) : currentPollingSeconds;
 
   // Fallback display for errors
   if (loadError) {
