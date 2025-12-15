@@ -4,30 +4,14 @@ import WorkplanFlow from './components/WorkplanFlow'
 import FilterPanel, { FilterOptions } from './components/FilterPanel'
 import OrientationWarning from './components/OrientationWarning'
 import { WorkPlan, CommitStatus } from './types'
+import { buildWorkplanCatalog, WorkplanCatalog } from './app/utils/workplanCatalog'
 import { ArrowLeft, ChevronDown, Monitor, Moon, RefreshCw, RotateCw, SlidersHorizontal, Sun } from 'lucide-react'
 import './App.css'
-
-const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-};
-
-const hasTicketGoal = (ticket: unknown): ticket is { goal: string } => {
-  return isRecord(ticket) && typeof ticket.goal === 'string';
-};
 
 function App() {
   // Initialize with normalized sample data
   const [workplan, setWorkplan] = useState<WorkPlan | null>(null);
-  const [workplanCatalog, setWorkplanCatalog] = useState<{
-    agents: Array<{
-      agentId: string;
-      workplans: Array<{
-        workplanId: string;
-        goal?: string;
-        hasTicket: boolean;
-      }>;
-    }>;
-  } | null>(null);
+  const [workplanCatalog, setWorkplanCatalog] = useState<WorkplanCatalog | null>(null);
   const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Polling interval (milliseconds)
@@ -113,66 +97,7 @@ function App() {
       
       const actualWorkPlan = await response.json();
 
-      const catalog = (() => {
-        // Prefer the current schema: agents[agentId].workplans[workplanId]
-        if (isRecord(actualWorkPlan) && isRecord(actualWorkPlan.agents)) {
-          const agentsObject = actualWorkPlan.agents as Record<string, unknown>;
-          const agents = Object.entries(agentsObject)
-            .map(([agentId, agentState]) => {
-              const rawWorkplans: Record<string, unknown> =
-                isRecord(agentState) && isRecord(agentState.workplans)
-                  ? (agentState.workplans as Record<string, unknown>)
-                  : {};
-
-              const workplans = Object.entries(rawWorkplans)
-                .map(([workplanId, ticket]) => {
-                  const hasTicket = hasTicketGoal(ticket);
-                  return {
-                    workplanId,
-                    goal: hasTicket ? String(ticket.goal) : undefined,
-                    hasTicket
-                  };
-                })
-                .sort((a, b) => a.workplanId.localeCompare(b.workplanId));
-
-              return { agentId, workplans };
-            })
-            .sort((a, b) => a.agentId.localeCompare(b.agentId));
-
-          return { agents };
-        }
-
-        // Legacy support: pre-agent schema
-        if (isRecord(actualWorkPlan) && isRecord(actualWorkPlan.workplans)) {
-          const rawWorkplans = actualWorkPlan.workplans as Record<string, unknown>;
-          const workplans = Object.entries(rawWorkplans)
-            .map(([workplanId, ticket]) => {
-              const hasTicket = hasTicketGoal(ticket);
-              return {
-                workplanId,
-                goal: hasTicket ? String(ticket.goal) : undefined,
-                hasTicket
-              };
-            })
-            .sort((a, b) => a.workplanId.localeCompare(b.workplanId));
-
-          return { agents: [{ agentId: 'legacy', workplans }] };
-        }
-
-        // Legacy support: currentTicket schema
-        if (isRecord(actualWorkPlan) && 'currentTicket' in actualWorkPlan && actualWorkPlan.currentTicket) {
-          const ticket = (actualWorkPlan as Record<string, unknown>).currentTicket;
-          const hasTicket = hasTicketGoal(ticket);
-          return {
-            agents: [{
-              agentId: 'legacy',
-              workplans: [{ workplanId: 'legacy', goal: hasTicket ? String(ticket.goal) : undefined, hasTicket }]
-            }]
-          };
-        }
-
-        return { agents: [] };
-      })();
+      const catalog = buildWorkplanCatalog(actualWorkPlan);
 
       setWorkplanCatalog(catalog);
 
