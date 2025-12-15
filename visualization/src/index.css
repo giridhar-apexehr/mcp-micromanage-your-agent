@@ -329,6 +329,91 @@ h1 {
   height: 14px;
 }
 
+ .react-flow__minimap {
+  border-radius: 16px;
+  overflow: hidden;
+  position: absolute;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(165%);
+  -webkit-backdrop-filter: blur(16px) saturate(165%);
+  box-shadow:
+    0 22px 60px rgba(15, 23, 42, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.55) inset,
+    0 -1px 0 rgba(15, 23, 42, 0.06) inset;
+ }
+
+ .react-flow__minimap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(59, 130, 246, 0.12), transparent 62%);
+  pointer-events: none;
+ }
+
+ .react-flow__minimap::after {
+  content: '';
+  position: absolute;
+  left: -20%;
+  top: -45%;
+  width: 140%;
+  height: 120%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.00) 45%);
+  transform: rotate(6deg);
+  opacity: 0.35;
+  pointer-events: none;
+ }
+
+ .react-flow__minimap svg {
+  position: relative;
+  z-index: 1;
+  display: block;
+ }
+
+ .react-flow__minimap-mask {
+  fill: rgba(15, 23, 42, 0.14);
+ }
+
+ .react-flow__minimap-viewport {
+  stroke: rgba(37, 99, 235, 0.95);
+  stroke-width: 2;
+  fill: rgba(59, 130, 246, 0.22);
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.18));
+ }
+
+ .dark-mode .react-flow__minimap {
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(15, 23, 42, 0.30);
+  backdrop-filter: blur(18px) saturate(175%);
+  -webkit-backdrop-filter: blur(18px) saturate(175%);
+  box-shadow:
+    0 26px 70px rgba(0, 0, 0, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.40) inset;
+ }
+
+ .dark-mode .react-flow__minimap::before {
+  background:
+    radial-gradient(560px 140px at 18% 0%, rgba(226, 232, 240, 0.16), transparent 60%),
+    radial-gradient(520px 160px at 85% 110%, rgba(96, 165, 250, 0.10), transparent 62%);
+ }
+
+ .dark-mode .react-flow__minimap::after {
+  opacity: 0.20;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.18), rgba(226, 232, 240, 0.00) 45%);
+ }
+
+ .dark-mode .react-flow__minimap-mask {
+  fill: rgba(15, 23, 42, 0.58);
+ }
+
+ .dark-mode .react-flow__minimap-viewport {
+  stroke: rgba(96, 165, 250, 0.76);
+  fill: rgba(96, 165, 250, 0.16);
+ }
+
 .dark-mode .react-flow__background {
   background-color: var(--background-color);
 }
@@ -345,14 +430,6 @@ h1 {
 
 .dark-mode .react-flow__edge-text {
   fill: var(--text-color);
-}
-
-.dark-mode .react-flow__minimap {
-  background-color: var(--panel-bg);
-}
-
-.dark-mode .react-flow__minimap-mask {
-  fill: var(--panel-bg);
 }
 
 /* コンポーネントのダークモード対応 */
