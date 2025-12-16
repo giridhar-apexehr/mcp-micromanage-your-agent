@@ -9,6 +9,7 @@
  */
 
 import type { ReactNode } from 'react'
+import { Navbar, NavbarBrand, NavbarContent } from '@heroui/navbar'
 
 /**
  * Props for the Header component.
@@ -65,26 +66,33 @@ export function Header({
   wrapActions = true,
 }: HeaderProps) {
   return (
-    <header className="app-topbar">
+    <Navbar className="app-topbar" maxWidth="full">
       <div className="topbar-inner">
-        {nav && <div className="topbar-nav">{nav}</div>}
+        {nav && (
+          <NavbarContent className="topbar-nav" justify="start">
+            {nav}
+          </NavbarContent>
+        )}
 
-        <div className="topbar-brand">
+        <NavbarBrand className="topbar-brand">
           <div className="topbar-title">{title}</div>
           {subtitle && (
             <div className="topbar-subtitle" title={subtitleTitle}>
               {subtitle}
             </div>
           )}
-        </div>
+        </NavbarBrand>
 
-        {actions &&
-          (wrapActions ? (
-            <div className="topbar-actions">{actions}</div>
-          ) : (
-            actions
-          ))}
+        {actions && (
+          <NavbarContent justify="end">
+            {wrapActions ? (
+              <div className="topbar-actions">{actions}</div>
+            ) : (
+              actions
+            )}
+          </NavbarContent>
+        )}
       </div>
-    </header>
+    </Navbar>
   )
 }
