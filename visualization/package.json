@@ -11,8 +11,11 @@
     "test:responsive": "node test/responsive-tests.js"
   },
   "dependencies": {
+    "@heroui/system": "^2.4.24",
+    "@heroui/theme": "^2.4.24",
     "@tailwindcss/postcss": "^4.0.15",
     "autoprefixer": "^10.4.21",
+    "framer-motion": "^12.23.26",
     "html-to-image": "^1.11.11",
     "lucide-react": "^0.542.0",
     "postcss": "^8.5.3",
