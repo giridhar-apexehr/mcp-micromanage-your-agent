@@ -242,21 +242,26 @@ export const convertWorkPlanToFlow = (workplan: WorkPlan, options?: LayoutOption
 const getOverallStatus = (statuses: (CommitStatus | undefined)[]): CommitStatus => {
   // Treat undefined status as 'not_started'
   const definedStatuses = statuses.map(s => s || 'not_started');
+  const nonCancelledStatuses = definedStatuses.filter(status => status !== 'cancelled');
   
-  if (definedStatuses.every(status => status === 'completed')) {
+  if (nonCancelledStatuses.length === 0 && definedStatuses.some(status => status === 'cancelled')) {
+    return 'cancelled';
+  }
+
+  if (nonCancelledStatuses.length > 0 && nonCancelledStatuses.every(status => status === 'completed')) {
     return 'completed';
   }
   
-  if (definedStatuses.some(status => status === 'in_progress')) {
+  if (nonCancelledStatuses.some(status => status === 'in_progress')) {
     return 'in_progress';
   }
   
-  if (definedStatuses.some(status => status === 'needsRefinment')) {
+  if (nonCancelledStatuses.some(status => status === 'needsRefinment')) {
     return 'needsRefinment';
   }
   
-  if (definedStatuses.some(status => status === 'cancelled')) {
-    return 'cancelled';
+  if (nonCancelledStatuses.some(status => status === 'user_review')) {
+    return 'user_review';
   }
   
   return 'not_started';
