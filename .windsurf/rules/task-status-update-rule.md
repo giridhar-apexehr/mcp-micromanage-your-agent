@@ -6,6 +6,8 @@ trigger: model_decision
 ## STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:
 
 ### Scope (multiple agents/workplans):
+- `agentId` must always be your name.
+- `workplanId` must always be the name of the ticket or issue in kebab-case.
 - All rules and invariants in this document apply **within a single selected (agentId, workplanId)**.
 - The invariant "exactly one task is in either `in_progress` or `user_review`" is **per (agentId, workplanId)** (not global across all agents/workplans).
 
