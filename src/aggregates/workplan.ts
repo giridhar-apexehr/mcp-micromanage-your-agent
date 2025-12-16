@@ -126,6 +126,16 @@ export class WorkPlan {
 
       const ticket = ticketCheck.ticket;
 
+      const inProgressCommits = ticket.pullRequests.reduce((sum: number, pullRequest: PullRequest) => {
+        return sum + pullRequest.commits.filter((c: { status: Status }) => c.status === 'in_progress').length;
+      }, 0);
+
+      if (inProgressCommits > 1) {
+        const error = `Invalid state: found ${inProgressCommits} commits with status "in_progress". There must be exactly one task in "in_progress" (or none).`;
+        logger.error(error);
+        return errorResponse(error);
+      }
+
       const prIndex = input.prIndex;
       if (prIndex < 0 || prIndex >= ticket.pullRequests.length) {
         const error = `Invalid prIndex: must be between 0 and ${ticket.pullRequests.length - 1}`;
