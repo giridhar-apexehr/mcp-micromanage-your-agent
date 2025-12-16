@@ -167,33 +167,23 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   }, [isOpen]);
   
   return (
-    <div 
-      ref={panelRef}
-      className="filter-panel bg-white rounded-lg shadow-lg p-4 border border-gray-200 transition-all duration-300"
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-          <span className="mr-2" aria-hidden="true">
+    <div ref={panelRef} className="filter-panel" role="dialog" aria-label="Filter settings">
+      <div className="filter-panel__header">
+        <div className="filter-panel__title">
+          <span aria-hidden="true">
             <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
           </span>
           Filter Settings
-        </h3>
-        <button 
-          onClick={onClose}
-          className="filter-panel__close text-gray-500 hover:text-gray-700 text-xl transition-colors p-1 rounded-full hover:bg-gray-100"
-          aria-label="Close"
-          type="button"
-        >
+        </div>
+        <button onClick={onClose} className="filter-panel__close" aria-label="Close" type="button">
           <X className="morphic-icon" size={18} strokeWidth={2} />
         </button>
       </div>
-      
-      <div className="space-y-4">
+
+      <div className="filter-panel__content">
         {/* Status filter */}
         <div className="filter-panel__field">
-          <label className="filter-panel__label block text-sm font-medium text-gray-700 mb-1">
-            Status
-          </label>
+          <label className="filter-panel__label">Status</label>
           <div className="relative">
             <button
               ref={statusTriggerRef}
@@ -301,16 +291,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         
         {/* Search filter */}
         <div className="filter-panel__field">
-          <label className="filter-panel__label block text-sm font-medium text-gray-700 mb-1">
-            Search
-          </label>
+          <label className="filter-panel__label">Search</label>
           <div className="relative">
             <input
               type="text"
               value={localOptions.searchQuery}
               onChange={(e) => handleChange('searchQuery', e.target.value)}
               placeholder="Search in commit content..."
-              className="w-full p-2 pl-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
               <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -318,7 +305,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             {localOptions.searchQuery && (
               <button
                 onClick={() => handleChange('searchQuery', '')}
-                className="filter-panel__icon-btn absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
+                className="filter-panel__icon-btn absolute inset-y-0 right-0 flex items-center pr-2"
                 aria-label="Clear search"
                 type="button"
               >
@@ -345,19 +332,19 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         {(localOptions.statusFilter !== 'all' || 
          localOptions.searchQuery.trim() || 
          localOptions.onlyShowActive) && (
-          <div className="flex flex-wrap gap-2 pt-2 pb-3">
-            <p className="w-full text-xs text-gray-500 mb-1">Active filters:</p>
+          <div className="filter-panel__badges">
+            <div className="filter-panel__badges-label">Active filters:</div>
             
             {localOptions.statusFilter !== 'all' && (
-              <span className="filter-panel__chip filter-panel__chip--blue inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="filter-panel__chip filter-panel__chip--blue">
                 {(() => {
                   const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus];
                   return <Icon className="morphic-icon" size={14} strokeWidth={2} />;
                 })()}
-                <span className="ml-1">{STATUS_LABELS[localOptions.statusFilter as CommitStatus]}</span>
+                <span className="filter-panel__chip-text">{STATUS_LABELS[localOptions.statusFilter as CommitStatus]}</span>
                 <button
                   onClick={() => handleChange('statusFilter', 'all')}
-                  className="filter-panel__chip-close ml-1 text-blue-500 hover:text-blue-700"
+                  className="filter-panel__chip-close"
                   aria-label="Clear status filter"
                   type="button"
                 >
@@ -367,12 +354,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
             
             {localOptions.searchQuery.trim() && (
-              <span className="filter-panel__chip filter-panel__chip--green inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <span className="filter-panel__chip filter-panel__chip--green">
                 <Search className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
-                <span className="ml-1">{localOptions.searchQuery}</span>
+                <span className="filter-panel__chip-text">{localOptions.searchQuery}</span>
                 <button
                   onClick={() => handleChange('searchQuery', '')}
-                  className="filter-panel__chip-close ml-1 text-green-500 hover:text-green-700"
+                  className="filter-panel__chip-close"
                   aria-label="Clear search filter"
                   type="button"
                 >
@@ -382,12 +369,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
             
             {localOptions.onlyShowActive && (
-              <span className="filter-panel__chip filter-panel__chip--yellow inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <span className="filter-panel__chip filter-panel__chip--yellow">
                 <RefreshCw className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
-                <span className="ml-1">Active Only</span>
+                <span className="filter-panel__chip-text">Active Only</span>
                 <button
                   onClick={() => handleChange('onlyShowActive', false)}
-                  className="filter-panel__chip-close ml-1 text-yellow-500 hover:text-yellow-700"
+                  className="filter-panel__chip-close"
                   aria-label="Clear active-only filter"
                   type="button"
                 >
@@ -397,15 +384,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
           </div>
         )}
-        
-        {/* Reset button */}
-        <div className="pt-2 flex justify-end">
-          <button
-            onClick={handleReset}
-            className="filter-panel__reset px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded text-gray-700 text-sm transition-colors flex items-center"
-            type="button"
-          >
-            <RotateCcw className="w-4 h-4 mr-1" aria-hidden="true" />
+
+        <div className="filter-panel__footer">
+          <button onClick={handleReset} className="morphic-btn filter-panel__reset" type="button">
+            <RotateCcw className="morphic-icon" size={16} strokeWidth={2} aria-hidden="true" />
             Reset
           </button>
         </div>

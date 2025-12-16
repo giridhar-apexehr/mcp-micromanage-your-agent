@@ -111,7 +111,6 @@ header {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
-  backdrop-filter: blur(16px) saturate(135%);
 }
 
  .auto-refresh-panel-container.is-open {
@@ -125,6 +124,8 @@ header {
   position: relative;
   overflow: visible;
   color: var(--text-color);
+  background-clip: padding-box;
+  isolation: isolate;
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 18px;
   box-shadow:
@@ -136,6 +137,53 @@ header {
     linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.58));
   backdrop-filter: blur(16px) saturate(135%);
   -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+.filter-panel__header {
+  padding: 14px 16px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.filter-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.filter-panel__content {
+  padding: 10px 16px 16px;
+  display: grid;
+  gap: 16px;
+}
+
+.filter-panel__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.filter-panel__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-panel__badges-label {
+  width: 100%;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(100, 116, 139, 1);
+}
+
+.dark-mode .filter-panel__badges-label {
+  color: rgba(203, 213, 225, 0.78);
 }
 
 .dark-mode .filter-panel {
@@ -922,14 +970,24 @@ header {
 }
 
 .filter-panel__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.22);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.14));
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.10));
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.18) inset,
-    0 10px 22px rgba(15, 23, 42, 0.12);
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 12px 26px rgba(15, 23, 42, 0.12);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.filter-panel__chip-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-color);
 }
 
 .dark-mode .filter-panel__chip {
