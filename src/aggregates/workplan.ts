@@ -366,9 +366,13 @@ export class WorkPlan {
       // Calculate progress statistics
       const completedPRs = ticket.pullRequests.filter((pr: PullRequest) => pr.status === "completed").length;
       const totalPRs = ticket.pullRequests.length;
-      const completedCommits = ticket.pullRequests.reduce(
-        (sum: number, pr: PullRequest) => sum + pr.commits.filter((c: { status: Status }) => c.status === "completed").length, 0);
-      const totalCommits = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+      const completedCommits = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => {
+        const nonCancelledCommits = pr.commits.filter((c: { status: Status }) => c.status !== 'cancelled');
+        return sum + nonCancelledCommits.filter((c: { status: Status }) => c.status === 'completed').length;
+      }, 0);
+      const totalCommits = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => {
+        return sum + pr.commits.filter((c: { status: Status }) => c.status !== 'cancelled').length;
+      }, 0);
       
       // Generate PR status summary
       const prSummaries = generatePRSummaries(ticket.pullRequests);
@@ -393,7 +397,10 @@ export class WorkPlan {
         };
       });
       
-      logger.info(`Progress: ${completedPRs}/${totalPRs} PRs, ${completedCommits}/${totalCommits} commits, ${Math.round((completedCommits / totalCommits) * 100)}% complete`);
+      logger.info(
+        `Progress: ${completedPRs}/${totalPRs} PRs, ${completedCommits}/${totalCommits} commits, ` +
+        `${totalCommits ? Math.round((completedCommits / totalCommits) * 100) : 0}% complete`
+      );
       
       return {
         content: [{
