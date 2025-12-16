@@ -538,7 +538,13 @@ header {
 
  .filter-panel__field {
   padding: 2px 0;
- }
+}
+
+.filter-panel__input.auto-refresh-panel__input,
+.filter-panel__control.auto-refresh-panel__input {
+  padding-left: 34px;
+  padding-right: 34px;
+}
 
 .filter-panel__field-icon {
   color: rgba(148, 163, 184, 0.95);
