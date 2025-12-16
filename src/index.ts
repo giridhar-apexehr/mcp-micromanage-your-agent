@@ -5,7 +5,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import { PLAN_TOOL, TRACK_TOOL, UPDATE_STATUS_TOOL } from "./tools/index.js";
+import { INSERT_COMMIT_TOOL, PLAN_TOOL, TRACK_TOOL, UPDATE_STATUS_TOOL } from "./tools/index.js";
 import { taskPlanningGuide } from "./prompts.js";
 import logger, { LogLevel } from './utils/logger.js';
 import { WorkPlan, WorkPlanInitOptions } from './aggregates/workplan.js';
@@ -75,7 +75,7 @@ server.prompt(
   taskPlanningGuide.handler
 );
 
-[PLAN_TOOL, TRACK_TOOL, UPDATE_STATUS_TOOL].forEach(tool => {
+[PLAN_TOOL, TRACK_TOOL, UPDATE_STATUS_TOOL, INSERT_COMMIT_TOOL].forEach(tool => {
   server.tool(tool.name, tool.description ?? "", tool.schema, tool.handler);
 });
 

@@ -27,6 +27,13 @@ export interface UpdateStatusInput {
   developerNote?: string;  // Added field for developer implementation notes
 }
 
+export interface InsertCommitInput {
+  prIndex: number;
+  insertAfterCommitIndex: number;
+  goal: string;
+  developerNote?: string;
+}
+
 // 初期化オプション
 export interface WorkPlanInitOptions {
   dataDir?: string;         // データディレクトリパス
@@ -86,6 +93,99 @@ export class WorkPlan {
     // 初期化オプションの処理
     if (options) {
       this.initialize(options);
+    }
+
+  }
+
+  public insertCommit(input: InsertCommitInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
+    try {
+      if (!this.initialized) {
+        return errorResponse('WorkPlan is not initialized. Call initialize() first.');
+      }
+
+      logger.info(`Inserting commit for PR #${input.prIndex} after commit #${input.insertAfterCommitIndex}`);
+
+      if (!agentId || !String(agentId).trim()) {
+        return errorResponse('agentId is required.');
+      }
+
+      if (!workplanId || !String(workplanId).trim()) {
+        return errorResponse('workplanId is required.');
+      }
+
+      const agentState = this.agents[agentId];
+      if (!agentState) {
+        return errorResponse(`No agent found for agentId: ${agentId}`);
+      }
+
+      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
+      if (!ticketCheck.result) {
+        logger.warn('No implementation plan found');
+        return ticketCheck.response;
+      }
+
+      const ticket = ticketCheck.ticket;
+
+      const prIndex = input.prIndex;
+      if (prIndex < 0 || prIndex >= ticket.pullRequests.length) {
+        const error = `Invalid prIndex: must be between 0 and ${ticket.pullRequests.length - 1}`;
+        logger.error(error);
+        return errorResponse(error);
+      }
+
+      const pr = ticket.pullRequests[prIndex];
+      const commits = pr.commits;
+
+      const insertAfterCommitIndex = input.insertAfterCommitIndex;
+      if (insertAfterCommitIndex < -1 || insertAfterCommitIndex >= commits.length) {
+        const error = `Invalid insertAfterCommitIndex: must be -1 or between 0 and ${Math.max(commits.length - 1, 0)}`;
+        logger.error(error);
+        return errorResponse(error);
+      }
+
+      const insertAtIndex = insertAfterCommitIndex === -1 ? 0 : insertAfterCommitIndex + 1;
+
+      const newCommit = {
+        goal: input.goal,
+        status: "not_started" as Status,
+        developerNote: input.developerNote
+      };
+
+      const newCommits = [
+        ...commits.slice(0, insertAtIndex),
+        newCommit,
+        ...commits.slice(insertAtIndex)
+      ];
+
+      const updatedPr = updatePRStatusBasedOnCommits({
+        ...pr,
+        commits: newCommits
+      });
+
+      ticket.pullRequests[prIndex] = updatedPr;
+
+      const saveSuccess = this.saveState();
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            message: `Commit inserted at index ${insertAtIndex} for PR #${prIndex}.`,
+            agentId,
+            workplanId,
+            prIndex,
+            insertAfterCommitIndex,
+            insertedCommitIndex: insertAtIndex,
+            goal: input.goal,
+            developerNote: input.developerNote,
+            persistenceStatus: saveSuccess ? 'saved' : 'memory_only',
+            lastUpdated: this.lastUpdated
+          }, null, 2)
+        }]
+      };
+    } catch (error) {
+      logger.logError('Error during commit insertion', error);
+      return errorResponse(error instanceof Error ? error.message : String(error));
     }
   }
   
