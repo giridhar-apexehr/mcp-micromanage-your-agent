@@ -10,74 +10,76 @@
  * - Optional outside click and Escape key handling.
  */
 
-import type { RefObject } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type FloatingPanelPosition = { top: number; left: number };
+export type FloatingPanelPosition = { top: number; left: number }
 
 export type UseFloatingPanelOptions = {
   /**
    * Ref to the element that anchors the panel (typically the trigger button).
    */
-  anchorRef: RefObject<HTMLElement | null>;
+  anchorRef: RefObject<HTMLElement | null>
 
   /**
    * Optional ref to the panel element itself. Used for outside-click detection.
    */
-  panelRef?: RefObject<HTMLElement | null>;
+  panelRef?: RefObject<HTMLElement | null>
 
   /**
    * Optional ref to an additional element that should be treated as "inside" clicks.
    * Useful when the anchor wrapper is broader than the trigger button.
    */
-  ignoreOutsideClickRef?: RefObject<HTMLElement | null>;
+  ignoreOutsideClickRef?: RefObject<HTMLElement | null>
 
   /**
    * Whether to close the panel on outside click.
    */
-  closeOnOutsideClick?: boolean;
+  closeOnOutsideClick?: boolean
 
   /**
    * Whether to close the panel on Escape.
    */
-  closeOnEscape?: boolean;
+  closeOnEscape?: boolean
 
   /**
    * Margin (px) between anchor and panel.
    */
-  margin?: number;
+  margin?: number
 
   /**
    * Max panel width used for viewport clamping.
    */
-  maxPanelWidth?: number;
+  maxPanelWidth?: number
 
   /**
    * Min panel width used for viewport clamping.
    */
-  minPanelWidth?: number;
+  minPanelWidth?: number
 
   /**
    * Delay (ms) to keep the panel mounted after closing so CSS transitions can play.
    */
-  closeDelayMs?: number;
-};
+  closeDelayMs?: number
+}
 
 export type UseFloatingPanelResult = {
-  isRendered: boolean;
-  isOpen: boolean;
-  position: FloatingPanelPosition | null;
-  open: () => void;
-  close: () => void;
-  reset: () => void;
-  toggle: () => void;
-  updatePosition: () => void;
-};
+  isRendered: boolean
+  isOpen: boolean
+  position: FloatingPanelPosition | null
+  open: () => void
+  close: () => void
+  reset: () => void
+  toggle: () => void
+  updatePosition: () => void
+}
 
 /**
  * Hook that encapsulates common floating panel behavior.
  */
-export const useFloatingPanel = (options: UseFloatingPanelOptions): UseFloatingPanelResult => {
+export const useFloatingPanel = (
+  options: UseFloatingPanelOptions,
+): UseFloatingPanelResult => {
   const {
     anchorRef,
     panelRef,
@@ -87,127 +89,143 @@ export const useFloatingPanel = (options: UseFloatingPanelOptions): UseFloatingP
     margin = 10,
     maxPanelWidth = 320,
     minPanelWidth = 200,
-    closeDelayMs = 180
-  } = options;
+    closeDelayMs = 180,
+  } = options
 
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [isRendered, setIsRendered] = useState<boolean>(false);
-  const [position, setPosition] = useState<FloatingPanelPosition | null>(null);
+  const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [isRendered, setIsRendered] = useState<boolean>(false)
+  const [position, setPosition] = useState<FloatingPanelPosition | null>(null)
 
-  const closeTimeoutRef = useRef<number | null>(null);
+  const closeTimeoutRef = useRef<number | null>(null)
 
   const clearCloseTimeout = useCallback(() => {
     if (closeTimeoutRef.current) {
-      window.clearTimeout(closeTimeoutRef.current);
-      closeTimeoutRef.current = null;
+      window.clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
     }
-  }, []);
+  }, [])
 
   const updatePosition = useCallback(() => {
-    const anchor = anchorRef.current;
-    if (!anchor) return;
+    const anchor = anchorRef.current
+    if (!anchor) return
 
-    const rect = anchor.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
+    const rect = anchor.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
 
-    const panelWidth = Math.min(maxPanelWidth, Math.max(minPanelWidth, viewportWidth - 20));
-    const desiredLeft = rect.left;
-    const clampedLeft = Math.min(Math.max(10, desiredLeft), viewportWidth - 10 - panelWidth);
-    const top = rect.bottom + margin;
+    const panelWidth = Math.min(
+      maxPanelWidth,
+      Math.max(minPanelWidth, viewportWidth - 20),
+    )
+    const desiredLeft = rect.left
+    const clampedLeft = Math.min(
+      Math.max(10, desiredLeft),
+      viewportWidth - 10 - panelWidth,
+    )
+    const top = rect.bottom + margin
 
-    setPosition({ top, left: clampedLeft });
-  }, [anchorRef, margin, maxPanelWidth, minPanelWidth]);
+    setPosition({ top, left: clampedLeft })
+  }, [anchorRef, margin, maxPanelWidth, minPanelWidth])
 
   const open = useCallback(() => {
-    clearCloseTimeout();
-    setIsRendered(true);
+    clearCloseTimeout()
+    setIsRendered(true)
     requestAnimationFrame(() => {
-      setIsOpen(true);
-    });
-  }, [clearCloseTimeout]);
+      setIsOpen(true)
+    })
+  }, [clearCloseTimeout])
 
   const close = useCallback(() => {
-    setIsOpen(false);
-    clearCloseTimeout();
+    setIsOpen(false)
+    clearCloseTimeout()
 
     closeTimeoutRef.current = window.setTimeout(() => {
-      setIsRendered(false);
-      closeTimeoutRef.current = null;
-    }, closeDelayMs);
-  }, [clearCloseTimeout, closeDelayMs]);
+      setIsRendered(false)
+      closeTimeoutRef.current = null
+    }, closeDelayMs)
+  }, [clearCloseTimeout, closeDelayMs])
 
   const reset = useCallback(() => {
-    clearCloseTimeout();
-    setIsOpen(false);
-    setIsRendered(false);
-    setPosition(null);
-  }, [clearCloseTimeout]);
+    clearCloseTimeout()
+    setIsOpen(false)
+    setIsRendered(false)
+    setPosition(null)
+  }, [clearCloseTimeout])
 
   const toggle = useCallback(() => {
     if (isOpen) {
-      close();
-      return;
+      close()
+      return
     }
-    open();
-  }, [close, isOpen, open]);
+    open()
+  }, [close, isOpen, open])
 
   useEffect(() => {
-    if (!isOpen) return;
-    updatePosition();
+    if (!isOpen) return
+    updatePosition()
 
-    const handleViewportChange = () => updatePosition();
-    window.addEventListener('resize', handleViewportChange);
-    window.addEventListener('scroll', handleViewportChange, true);
+    const handleViewportChange = () => updatePosition()
+    window.addEventListener('resize', handleViewportChange)
+    window.addEventListener('scroll', handleViewportChange, true)
 
     return () => {
-      window.removeEventListener('resize', handleViewportChange);
-      window.removeEventListener('scroll', handleViewportChange, true);
-    };
-  }, [isOpen, updatePosition]);
+      window.removeEventListener('resize', handleViewportChange)
+      window.removeEventListener('scroll', handleViewportChange, true)
+    }
+  }, [isOpen, updatePosition])
 
   useEffect(() => {
-    if (!isOpen || !closeOnOutsideClick) return;
+    if (!isOpen || !closeOnOutsideClick) return
 
     const handleOutsideClick = (event: MouseEvent) => {
-      const target = event.target as Node;
+      const target = event.target as Node
 
-      if (ignoreOutsideClickRef?.current && ignoreOutsideClickRef.current.contains(target)) {
-        return;
+      if (
+        ignoreOutsideClickRef?.current &&
+        ignoreOutsideClickRef.current.contains(target)
+      ) {
+        return
       }
 
       if (anchorRef.current && anchorRef.current.contains(target)) {
-        return;
+        return
       }
 
       if (panelRef?.current && panelRef.current.contains(target)) {
-        return;
+        return
       }
 
-      close();
-    };
+      close()
+    }
 
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [anchorRef, close, closeOnOutsideClick, ignoreOutsideClickRef, isOpen, panelRef]);
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [
+    anchorRef,
+    close,
+    closeOnOutsideClick,
+    ignoreOutsideClickRef,
+    isOpen,
+    panelRef,
+  ])
 
   useEffect(() => {
-    if (!isOpen || !closeOnEscape) return;
+    if (!isOpen || !closeOnEscape) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        close();
+        close()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [close, closeOnEscape, isOpen]);
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [close, closeOnEscape, isOpen])
 
   useEffect(() => {
     return () => {
-      clearCloseTimeout();
-    };
-  }, [clearCloseTimeout]);
+      clearCloseTimeout()
+    }
+  }, [clearCloseTimeout])
 
   return {
     isRendered,
@@ -217,6 +235,6 @@ export const useFloatingPanel = (options: UseFloatingPanelOptions): UseFloatingP
     close,
     reset,
     toggle,
-    updatePosition
-  };
-};
+    updatePosition,
+  }
+}

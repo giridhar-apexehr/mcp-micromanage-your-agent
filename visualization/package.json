@@ -12,6 +12,8 @@
     "lint": "biome lint"
   },
   "dependencies": {
+    "@heroui/button": "^2.2.28",
+    "@heroui/navbar": "^2.2.26",
     "@heroui/system": "^2.4.24",
     "@heroui/theme": "^2.4.24",
     "@tailwindcss/postcss": "^4.0.15",

@@ -47,7 +47,9 @@
   border-radius: 50%;
   background-color: #60a5fa;
   border: 2px solid white;
-  transition: transform 0.2s ease, background-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .commit-node .handle-left {
@@ -126,7 +128,9 @@
 .react-flow__edge-path {
   stroke-width: 2;
   stroke: var(--edge-color);
-  transition: stroke 0.3s, stroke-width 0.3s;
+  transition:
+    stroke 0.3s,
+    stroke-width 0.3s;
 }
 
 /* エッジアニメーション */
@@ -291,4 +295,4 @@
 /* ノード選択時のスタイル */
 .react-flow__node.selected {
   box-shadow: 0 0 0 2px #3b82f6 !important;
-} 
+}

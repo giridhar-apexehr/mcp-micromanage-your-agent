@@ -12,201 +12,221 @@
  * - Keep a `popstate` listener to reload when navigating browser history.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { CommitStatus, WorkPlan } from '../../types';
-import { buildWorkplanCatalog, WorkplanCatalog } from '../utils/workplanCatalog';
+import { CommitStatus, WorkPlan } from '../../types'
+import { buildWorkplanCatalog, WorkplanCatalog } from '../utils/workplanCatalog'
 
 export type UseWorkplanDataResult = {
-  workplan: WorkPlan | null;
-  workplanCatalog: WorkplanCatalog | null;
-  lastLoadedTime: Date | null;
-  loadError: string | null;
-  isLoading: boolean;
-  loadData: () => Promise<void>;
-  openWorkplan: (agentId: string, workplanId: string) => void;
-  goToDashboard: () => void;
-};
+  workplan: WorkPlan | null
+  workplanCatalog: WorkplanCatalog | null
+  lastLoadedTime: Date | null
+  loadError: string | null
+  isLoading: boolean
+  loadData: () => Promise<void>
+  openWorkplan: (agentId: string, workplanId: string) => void
+  goToDashboard: () => void
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> => {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
-};
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
 
 /**
  * Loads and normalizes workplan data and selection state.
  */
 export const useWorkplanData = (): UseWorkplanDataResult => {
-  const [workplan, setWorkplan] = useState<WorkPlan | null>(null);
-  const [workplanCatalog, setWorkplanCatalog] = useState<WorkplanCatalog | null>(null);
-  const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [workplan, setWorkplan] = useState<WorkPlan | null>(null)
+  const [workplanCatalog, setWorkplanCatalog] =
+    useState<WorkplanCatalog | null>(null)
+  const [lastLoadedTime, setLastLoadedTime] = useState<Date | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const isLoadingRef = useRef<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const isLoadingRef = useRef<boolean>(false)
 
   const loadData = useCallback(async () => {
-    if (isLoadingRef.current) return;
+    if (isLoadingRef.current) return
 
-    isLoadingRef.current = true;
-    setIsLoading(true);
+    isLoadingRef.current = true
+    setIsLoading(true)
 
     try {
       const fetchOptions = {
         method: 'GET',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      };
-
-      const timestamp = new Date().getTime();
-      const response = await fetch(`/data/workplan.json?t=${timestamp}`, fetchOptions);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`);
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       }
 
-      const actualWorkPlan: unknown = await response.json();
+      const timestamp = new Date().getTime()
+      const response = await fetch(
+        `/data/workplan.json?t=${timestamp}`,
+        fetchOptions,
+      )
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data. Status: ${response.status}`)
+      }
 
-      const catalog = buildWorkplanCatalog(actualWorkPlan);
-      setWorkplanCatalog(catalog);
+      const actualWorkPlan: unknown = await response.json()
 
-      const selectionState = window.history.state as { selected?: boolean } | null;
-      const selectedByUser = selectionState?.selected === true;
+      const catalog = buildWorkplanCatalog(actualWorkPlan)
+      setWorkplanCatalog(catalog)
+
+      const selectionState = window.history.state as {
+        selected?: boolean
+      } | null
+      const selectedByUser = selectionState?.selected === true
 
       const resolvedTicket = (() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const requestedAgentId = urlParams.get('agentId');
-        const requestedWorkplanId = urlParams.get('workplanId');
+        const urlParams = new URLSearchParams(window.location.search)
+        const requestedAgentId = urlParams.get('agentId')
+        const requestedWorkplanId = urlParams.get('workplanId')
 
         if (!selectedByUser) {
-          return null;
+          return null
         }
 
         if (isRecord(actualWorkPlan)) {
-          const record = actualWorkPlan;
+          const record = actualWorkPlan
 
           if ('currentTicket' in record && record.currentTicket) {
-            return record.currentTicket;
+            return record.currentTicket
           }
 
           if ('workplans' in record && isRecord(record.workplans)) {
-            const workplans = record.workplans;
+            const workplans = record.workplans
             if (requestedWorkplanId && requestedWorkplanId in workplans) {
-              return workplans[requestedWorkplanId];
+              return workplans[requestedWorkplanId]
             }
-            return null;
+            return null
           }
 
           if ('agents' in record && isRecord(record.agents)) {
-            const agents = record.agents;
+            const agents = record.agents
             const resolvedAgent = (() => {
               if (requestedAgentId && requestedAgentId in agents) {
-                return agents[requestedAgentId];
+                return agents[requestedAgentId]
               }
-              return null;
-            })();
+              return null
+            })()
 
             if (!isRecord(resolvedAgent)) {
-              return null;
+              return null
             }
 
-            if ('workplans' in resolvedAgent && isRecord(resolvedAgent.workplans)) {
-              const workplans = resolvedAgent.workplans;
+            if (
+              'workplans' in resolvedAgent &&
+              isRecord(resolvedAgent.workplans)
+            ) {
+              const workplans = resolvedAgent.workplans
               if (requestedWorkplanId && requestedWorkplanId in workplans) {
-                return workplans[requestedWorkplanId];
+                return workplans[requestedWorkplanId]
               }
             }
 
-            return null;
+            return null
           }
         }
 
-        return null;
-      })();
+        return null
+      })()
 
       // If nothing selected or selection is ambiguous, we show the dashboard instead of erroring.
       if (!resolvedTicket || resolvedTicket === 'noTicket') {
-        setWorkplan(null);
-        setLastLoadedTime(new Date());
-        setLoadError(null);
-        return;
+        setWorkplan(null)
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
       }
 
-      if (!isRecord(resolvedTicket) || typeof resolvedTicket.goal !== 'string' || !Array.isArray(resolvedTicket.pullRequests)) {
-        setWorkplan(null);
-        setLastLoadedTime(new Date());
-        setLoadError(null);
-        return;
+      if (
+        !isRecord(resolvedTicket) ||
+        typeof resolvedTicket.goal !== 'string' ||
+        !Array.isArray(resolvedTicket.pullRequests)
+      ) {
+        setWorkplan(null)
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
       }
 
       const convertedWorkPlan: WorkPlan = {
         goal: resolvedTicket.goal,
-        prPlans: resolvedTicket.pullRequests.map((pr: {
-          goal: string;
-          status: string;
-          developerNote?: string;
-          commits: Array<{
-            goal: string;
-            status: string;
-            developerNote?: string;
-          }>;
-        }) => ({
-          goal: pr.goal,
-          status: pr.status as CommitStatus,
-          developerNote: pr.developerNote,
-          commitPlans: pr.commits.map((commit: {
-            goal: string;
-            status: string;
-            developerNote?: string;
+        prPlans: resolvedTicket.pullRequests.map(
+          (pr: {
+            goal: string
+            status: string
+            developerNote?: string
+            commits: Array<{
+              goal: string
+              status: string
+              developerNote?: string
+            }>
           }) => ({
-            goal: commit.goal,
-            status: commit.status as CommitStatus,
-            developerNote: commit.developerNote
-          }))
-        }))
-      };
+            goal: pr.goal,
+            status: pr.status as CommitStatus,
+            developerNote: pr.developerNote,
+            commitPlans: pr.commits.map(
+              (commit: {
+                goal: string
+                status: string
+                developerNote?: string
+              }) => ({
+                goal: commit.goal,
+                status: commit.status as CommitStatus,
+                developerNote: commit.developerNote,
+              }),
+            ),
+          }),
+        ),
+      }
 
-      setWorkplan(convertedWorkPlan);
-      setLastLoadedTime(new Date());
-      setLoadError(null);
+      setWorkplan(convertedWorkPlan)
+      setLastLoadedTime(new Date())
+      setLoadError(null)
     } catch (error) {
-      console.error('Error occurred while loading data:', error);
-      setLoadError('Failed to load data.');
+      console.error('Error occurred while loading data:', error)
+      setLoadError('Failed to load data.')
     } finally {
-      isLoadingRef.current = false;
-      setIsLoading(false);
+      isLoadingRef.current = false
+      setIsLoading(false)
     }
-  }, []);
+  }, [])
 
-  const openWorkplan = useCallback((agentId: string, workplanId: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('agentId', agentId);
-    url.searchParams.set('workplanId', workplanId);
-    window.history.pushState({ selected: true }, '', url.toString());
-    loadData();
-  }, [loadData]);
+  const openWorkplan = useCallback(
+    (agentId: string, workplanId: string) => {
+      const url = new URL(window.location.href)
+      url.searchParams.set('agentId', agentId)
+      url.searchParams.set('workplanId', workplanId)
+      window.history.pushState({ selected: true }, '', url.toString())
+      loadData()
+    },
+    [loadData],
+  )
 
   const goToDashboard = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('agentId');
-    url.searchParams.delete('workplanId');
-    window.history.pushState({ selected: false }, '', url.toString());
-    loadData();
-  }, [loadData]);
+    const url = new URL(window.location.href)
+    url.searchParams.delete('agentId')
+    url.searchParams.delete('workplanId')
+    window.history.pushState({ selected: false }, '', url.toString())
+    loadData()
+  }, [loadData])
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData()
+  }, [loadData])
 
   useEffect(() => {
     const handlePopState = () => {
-      loadData();
-    };
+      loadData()
+    }
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [loadData]);
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [loadData])
 
   return {
     workplan,
@@ -216,6 +236,6 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
     isLoading,
     loadData,
     openWorkplan,
-    goToDashboard
-  };
-};
+    goToDashboard,
+  }
+}

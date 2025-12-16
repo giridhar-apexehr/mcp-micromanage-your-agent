@@ -7,25 +7,31 @@
  * while this component owns the page shell and the main flow area.
  */
 
-import type { ReactNode } from 'react';
-import { ReactFlowProvider } from 'reactflow';
+import type { ReactNode } from 'react'
+import { ReactFlowProvider } from 'reactflow'
 
-import WorkplanFlow from '../components/WorkplanFlow';
-import type { FilterOptions } from '../components/panels/FilterPanel';
-import type { WorkPlan } from '../types';
+import { WorkplanFlow } from '../components/WorkplanFlow'
+import type { FilterOptions } from '../components/panels/FilterPanel.types'
+import type { WorkPlan } from '../types'
 
-export type WorkplanPageProps = {
-  isDarkMode: boolean;
-  header: ReactNode;
-  workplan: WorkPlan;
-  filterOptions: FilterOptions;
-  children?: ReactNode;
-};
+type WorkplanPageProps = {
+  isDarkMode: boolean
+  header: ReactNode
+  workplan: WorkPlan
+  filterOptions: FilterOptions
+  children?: ReactNode
+}
 
 /**
  * Workplan page scaffold.
  */
-export function WorkplanPage({ isDarkMode, header, workplan, filterOptions, children }: WorkplanPageProps) {
+export function WorkplanPage({
+  isDarkMode,
+  header,
+  workplan,
+  filterOptions,
+  children,
+}: WorkplanPageProps) {
   return (
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
       <ReactFlowProvider>
@@ -38,7 +44,5 @@ export function WorkplanPage({ isDarkMode, header, workplan, filterOptions, chil
         {children}
       </ReactFlowProvider>
     </div>
-  );
+  )
 }
-
-export default WorkplanPage;

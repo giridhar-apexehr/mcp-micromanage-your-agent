@@ -1,5 +1,5 @@
-import { Handle, Position, type NodeProps } from 'reactflow';
-import { CommitStatus, type NodeData } from '../types';
+import { Handle, Position, type NodeProps } from 'reactflow'
+import { CommitStatus, type NodeData } from '../types'
 
 const statusLabels: Record<CommitStatus, string> = {
   not_started: 'Not Started',
@@ -9,17 +9,17 @@ const statusLabels: Record<CommitStatus, string> = {
   cancelled: 'Cancelled',
   needsRefinment: 'Needs Refinement',
   user_review: 'Awaiting User Review',
-};
+}
 
 function getLabelText(label: NodeData['label']): string {
-  if (typeof label === 'string') return label;
-  if (typeof label === 'number') return String(label);
-  return '';
+  if (typeof label === 'string') return label
+  if (typeof label === 'number') return String(label)
+  return ''
 }
 
 function PRNode({ data }: NodeProps<NodeData>) {
-  const labelText = getLabelText(data.label);
-  const status = data.status;
+  const labelText = getLabelText(data.label)
+  const status = data.status
 
   return (
     <div className="pr-node__content" aria-label={labelText || 'PR'}>
@@ -40,7 +40,9 @@ function PRNode({ data }: NodeProps<NodeData>) {
       />
 
       {status && (
-        <div className={`status-badge ${status} inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2`}>
+        <div
+          className={`status-badge ${status} inline-flex items-center px-2 py-1 rounded-full text-xs font-medium mb-2`}
+        >
           <span>{statusLabels[status]}</span>
         </div>
       )}
@@ -49,7 +51,7 @@ function PRNode({ data }: NodeProps<NodeData>) {
         {data.label}
       </div>
     </div>
-  );
+  )
 }
 
-export default PRNode;
+export default PRNode
