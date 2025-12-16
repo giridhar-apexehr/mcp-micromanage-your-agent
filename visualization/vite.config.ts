@@ -14,8 +14,10 @@ export default defineConfig({
   server: {
     // 静的ファイルをルートディレクトリからも提供
     fs: {
-      allow: ['..']
-    }
+      allow: ['..'],
+    },
+    host: '0.0.0.0',
+    port: 5173,
   },
   // 標準のpublicディレクトリ
   publicDir: path.resolve(__dirname, 'public'),

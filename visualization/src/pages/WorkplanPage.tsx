@@ -28,15 +28,15 @@ export type WorkplanPageProps = {
 export function WorkplanPage({ isDarkMode, header, workplan, filterOptions, children }: WorkplanPageProps) {
   return (
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
-      {header}
+      <ReactFlowProvider>
+        {header}
 
-      <main className="app-main">
-        <ReactFlowProvider>
+        <main className="app-main">
           <WorkplanFlow workplan={workplan} filterOptions={filterOptions} />
-        </ReactFlowProvider>
-      </main>
+        </main>
 
-      {children}
+        {children}
+      </ReactFlowProvider>
     </div>
   );
 }
