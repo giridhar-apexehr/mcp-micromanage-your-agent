@@ -91,7 +91,7 @@ header {
   width: min(320px, calc(100vw - 20px));
   isolation: isolate;
   border-radius: 18px;
-  overflow: hidden;
+  overflow: visible;
   opacity: 0;
   transform: translateY(-6px) scale(0.985);
   pointer-events: none;
@@ -105,7 +105,7 @@ header {
   width: min(320px, calc(100vw - 20px));
   isolation: isolate;
   border-radius: 18px;
-  overflow: hidden;
+  overflow: visible;
   opacity: 0;
   transform: translateY(-6px) scale(0.985);
   pointer-events: none;
@@ -117,18 +117,12 @@ header {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px) saturate(135%);
-  -webkit-backdrop-filter: blur(16px) saturate(135%);
 }
 
  .auto-refresh-panel-container.is-open {
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px) saturate(135%);
-  -webkit-backdrop-filter: blur(16px) saturate(135%);
  }
 
  .filter-panel-container::before,
@@ -141,7 +135,9 @@ header {
   z-index: 0;
   opacity: 0;
   transition: opacity 180ms ease;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
  }
 
  .filter-panel-container > *,
