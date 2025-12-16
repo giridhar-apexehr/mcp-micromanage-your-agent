@@ -441,6 +441,15 @@ header {
   padding: 10px 16px;
  }
 
+ .filter-panel .auto-refresh-panel__section + .auto-refresh-panel__section {
+  padding-top: 18px;
+ }
+
+ .filter-panel__section {
+  display: grid;
+  gap: 14px;
+ }
+
  .auto-refresh-panel__label {
   display: block;
   margin: 0 0 6px;
@@ -506,6 +515,41 @@ header {
   -webkit-backdrop-filter: blur(10px) saturate(135%);
   padding: 8px 12px;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+ }
+
+ .morphic-input-with-icon {
+  position: relative;
+ }
+
+ .morphic-input-icon {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  pointer-events: none;
+ }
+
+ .morphic-input-suffix {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  padding-right: 10px;
+  pointer-events: none;
+ }
+
+ .morphic-input-action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
  }
 
  .dark-mode .auto-refresh-panel__input {

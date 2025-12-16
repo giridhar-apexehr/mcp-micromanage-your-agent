@@ -184,7 +184,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Status filter */}
         <div className="filter-panel__field">
           <label className="auto-refresh-panel__label">Status</label>
-          <div className="relative">
+          <div className="morphic-input-with-icon">
             <button
               ref={statusTriggerRef}
               type="button"
@@ -202,13 +202,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             >
               {STATUS_LABELS[localOptions.statusFilter as CommitStatus | 'all']}
             </button>
-            <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+            <div className="filter-panel__field-icon morphic-input-icon">
               {(() => {
                 const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all'];
                 return <Icon className="morphic-icon" size={16} strokeWidth={2} />;
               })()}
             </div>
-            <div className="filter-panel__field-suffix absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <div className="filter-panel__field-suffix morphic-input-suffix">
               <ChevronDown className="h-5 w-5 text-gray-400 filter-panel__chevron" aria-hidden="true" />
             </div>
 
@@ -295,7 +295,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         {/* Search filter */}
         <div className="filter-panel__field">
           <label className="auto-refresh-panel__label">Search</label>
-          <div className="relative">
+          <div className="morphic-input-with-icon">
             <input
               type="text"
               className="auto-refresh-panel__input filter-panel__input"
@@ -303,13 +303,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               onChange={(e) => handleChange('searchQuery', e.target.value)}
               placeholder="Search in commit content..."
             />
-            <div className="filter-panel__field-icon absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+            <div className="filter-panel__field-icon morphic-input-icon">
               <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
             </div>
             {localOptions.searchQuery && (
               <button
                 onClick={() => handleChange('searchQuery', '')}
-                className="filter-panel__icon-btn absolute inset-y-0 right-0 flex items-center pr-2"
+                className="filter-panel__icon-btn morphic-input-action"
                 aria-label="Clear search"
                 type="button"
               >
@@ -318,7 +318,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
           </div>
         </div>
+      </div>
 
+      <div className="auto-refresh-panel__section filter-panel__section">
         {/* Show only active items */}
         <label className="filter-panel__toggle" htmlFor="onlyActive">
           <input
@@ -331,7 +333,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <span className="filter-panel__check" aria-hidden="true" />
           <span className="filter-panel__toggle-label">Show only active tasks</span>
         </label>
+      </div>
 
+      <div className="auto-refresh-panel__section filter-panel__section">
         {/* Filter badge display */}
         {(localOptions.statusFilter !== 'all' || 
          localOptions.searchQuery.trim() || 
