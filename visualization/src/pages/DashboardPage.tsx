@@ -12,6 +12,7 @@ import { Monitor, Moon, Sun } from 'lucide-react'
 
 import type { ThemeMode } from '../app/hooks/useThemeMode'
 import type { WorkplanCatalog } from '../app/utils/workplanCatalog'
+import { Header } from '../components/common/Header'
 
 type DashboardPageProps = {
   isDarkMode: boolean
@@ -35,37 +36,28 @@ export function DashboardPage({
 }: DashboardPageProps) {
   return (
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
-      <header className="app-topbar">
-        <div className="topbar-inner">
-          <div className="topbar-brand">
-            <div className="topbar-title">Workplans</div>
-            <div
-              className="topbar-subtitle"
-              title="Select an agent and workplan"
-            >
-              Select an agent and workplan
-            </div>
-          </div>
-
-          <div className="topbar-actions">
-            <button
-              onClick={toggleThemeMode}
-              className="morphic-btn morphic-btn--icon"
-              aria-label="Toggle theme"
-              title="Toggle theme"
-              type="button"
-            >
-              {themeMode === 'system' ? (
-                <Monitor size={16} />
-              ) : themeMode === 'dark' ? (
-                <Moon size={16} />
-              ) : (
-                <Sun size={16} />
-              )}
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header
+        title="Workplans"
+        subtitle="Select an agent and workplan"
+        subtitleTitle="Select an agent and workplan"
+        actions={
+          <button
+            onClick={toggleThemeMode}
+            className="morphic-btn morphic-btn--icon"
+            aria-label="Toggle theme"
+            title="Toggle theme"
+            type="button"
+          >
+            {themeMode === 'system' ? (
+              <Monitor size={16} />
+            ) : themeMode === 'dark' ? (
+              <Moon size={16} />
+            ) : (
+              <Sun size={16} />
+            )}
+          </button>
+        }
+      />
 
       <main className="flex-1 overflow-auto">
         <div className="max-w-5xl mx-auto px-6 py-8">
