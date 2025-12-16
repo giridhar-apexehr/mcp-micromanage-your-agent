@@ -11,6 +11,7 @@ alwaysApply: false
 
     **When operating across multiple workplans:**
     - Always explicitly specify which `agentId` and `workplanId` you are updating/tracking.
+    - Naming: use your agent name as `agentId` (stable), and use a short kebab-cased identifier as `workplanId` (e.g., `ticket-123-auth-flow`).
     - Default behavior: keep using the same `(agentId, workplanId)` for the current ticket/thread; do **not** create/switch workplans per prompt.
     - If it is unclear which `(agentId, workplanId)` applies, ask the user rather than guessing.
 

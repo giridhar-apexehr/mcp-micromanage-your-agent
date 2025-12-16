@@ -35,6 +35,8 @@ export const taskPlanningGuide = {
 - This toolset supports multiple agents and multiple workplans.
 - \`agentId\` is required on every tool call.
 - \`workplanId\` is required on every tool call.
+- \`agentId\` should be your agent name (a stable identifier you keep using across the session).
+- \`workplanId\` should be a short kebab-cased identifier you choose (e.g., \`ticket-123-auth-flow\`) and then reuse for the current ticket/thread.
 - The planning and status transition rules apply **within the selected (agentId, workplanId)**.
 
 ## Method
@@ -52,7 +54,7 @@ export const taskPlanningGuide = {
 ### Implementation Criteria
 - Only proceed after achieving 100% clarity and confidence
 - Ensure all affected parts of the codebase have been fully identified through dependency tracing
-- **The work plan must be approved by the user before implementation**
+- **The work plan must be approved by the user before implementation, unless expressly given early**
 
 ## Prohibited Actions
 - **Any implementation or code writing, even "example code"**
@@ -69,32 +71,33 @@ export const progressInstructionGuide = {
   name: "progressInstructionGuide",
   description: "Based on this progress report, analyze the current state and suggest the next commit to work on.",
   text: `
-  Based on this progress report, analyze the current state and suggest the next commit to work on.
-  **Next, you must strictly follow these procedures without exception**:
+Based on this progress report, analyze the current state and suggest the next commit to work on.
+**Next, you must strictly follow these procedures without exception**:
 1. Before starting your next commit, obtain the user's approval.  
 2. Once approved, implement the code and test scripts strictly within this commit's scope.  
-   - Make sure there are no build errors or test failures.  
-   - If a UI is involved, verify its behavior using mcp playwright.  
+  - Make sure there are no build errors or test failures.  
+  - If a UI is involved, verify its behavior using mcp playwright.  
 3. After completing the commit:  
-   - Review and evaluate the implementation, and conduct a self-feedback cycle.  
-   - Request feedback from the user.
+  - Review and evaluate the implementation, and conduct a self-feedback cycle.  
+  - Request feedback from the user.
 
-  **User Review State Procedures**:
-  When setting a task status to "user_review":
-  1. Create a comprehensive review request message that includes:
-     - A clear summary of the implementation derived from PR/commit goals and developer notes
-     - Specific changes made and their intended functionality
-     - Areas that particularly need user verification
-     - Clear instructions for the user to approve (change status to "completed") or request changes
-  2. Format the review request message in a structured way with clear section headings
-  3. Remember that tasks cannot transition directly from other states to "completed" - they must go through "user_review" first
-  4. Only users can transition tasks from "user_review" to "completed" after their review
+**User Review State Procedures**:
+When setting a task status to "user_review":
+1. Create a comprehensive review request message that includes:
+    - A clear summary of the implementation derived from PR/commit goals and developer notes
+    - Specific changes made and their intended functionality
+    - Areas that particularly need user verification
+    - Clear instructions for the user to approve (change status to "completed") or request changes
+2. Format the review request message in a structured way with clear section headings
+3. Remember that tasks cannot transition directly from other states to "completed" - they must go through "user_review" first
+4. Only users can transition tasks from "user_review" to "completed" after their review, unless expressly given early approval
 
-  **Multiple Workplans**:
-  - If the progress report includes \`agentId\` and \`workplanId\`, treat that tuple as the scope for all status invariants and next-step suggestions.
-  - If you need to manage more than one plan in parallel, explicitly pick an \`agentId\` and \`workplanId\` and keep discussions and updates scoped to it.
+**Multiple Workplans**:
+- If the progress report includes \`agentId\` and \`workplanId\`, treat that tuple as the scope for all status invariants and next-step suggestions.
+- If you need to manage more than one plan in parallel, explicitly pick an \`agentId\` and \`workplanId\` and keep discussions and updates scoped to it.
+- Use your agent name as \`agentId\`, and use a kebab-cased \`workplanId\` that you reuse for the current ticket/thread.
 
-  **Always secure the user's agreement before starting the next task.**
+**Always secure the user's agreement before starting the next task.**
 `};
 
 // alternative, you can include this in your .mdc
@@ -102,27 +105,27 @@ export const updateTaskStatusRule= {
   name: "update-task-status-rule",
   description: "Always When updating the status of a task",
   text: `
-    **STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:**
+**STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:**
 
-    in_progress → user_review conditions:
-    ✅ No compilation errors exist
-    ✅ Necessary tests have been added and all pass
-    ✅ Required documentation updates are completed
+in_progress → user_review conditions:
+✅ No compilation errors exist
+✅ Necessary tests have been added and all pass
+✅ Required documentation updates are completed
 
-    needsRefinment → in_progress conditions:
-    ✅ Requirements have been sufficiently clarified and ready for implementation
-    ✅ All necessary information for implementation is available
-    ✅ The scope of the task is clearly defined
+needsRefinment → in_progress conditions:
+✅ Requirements have been sufficiently clarified and ready for implementation
+✅ All necessary information for implementation is available
+✅ The scope of the task is clearly defined
 
-    user_review → in_progress conditions:
-    ✅ From feedback, the content to be modified is completely clear
+user_review → in_progress conditions:
+✅ From feedback, the content to be modified is completely clear
 
-    * → needsRefinment conditions:
-    ✅ It becomes apparent that the task requirements are unclear or incomplete
+* → needsRefinment conditions:
+✅ It becomes apparent that the task requirements are unclear or incomplete
 
-    * → cancelled conditions:
-    ✅ There is a clear reason why the task is no longer needed, or alternative methods or solutions to meet the requirements are clear
-    ✅ The impact of cancellation on other related tasks has been evaluated
+* → cancelled conditions:
+✅ There is a clear reason why the task is no longer needed, or alternative methods or solutions to meet the requirements are clear
+✅ The impact of cancellation on other related tasks has been evaluated
 `};
 
 // alternative, you can include this in your .mdc
@@ -130,21 +133,21 @@ export const solutionExplorationGuide= {
   name: "solution-exploration-guide",
   description: "When examining how to implement an issue",
   text: `
-    ## Purpose
-    - nformation gathering and Brainstorming potential approaches
+## Purpose
+- nformation gathering and Brainstorming potential approaches
 
-    ## Forbidden: 
-    - Concrete planning, implementation details, or any code writing
+## Forbidden: 
+- Concrete planning, implementation details, or any code writing
 
-    ##output-format
-    - file: ticket_[issue name].md
-    - chapters:
-        - Summary of the issue that will be resolved with the ticket
-        - Overview of the architecture, domain model and data model to be changed or added this time
-        - Work plan based on PR and commitment units(This is only for creating chapters, do not write content)
+##output-format
+- file: ticket_[issue name].md
+- chapters:
+    - Summary of the issue that will be resolved with the ticket
+    - Overview of the architecture, domain model and data model to be changed or added this time
+    - Work plan based on PR and commitment units(This is only for creating chapters, do not write content)
 
-    ## Method
-    - Understand the issue from the given information and existing code
-    - research and interviews with users to ensure that we have all the information we need to complete the task
-    - Analyze potential impacts to the existing codebase
+## Method
+- Understand the issue from the given information and existing code
+- research and interviews with users to ensure that we have all the information we need to complete the task
+- Analyze potential impacts to the existing codebase
 `};
