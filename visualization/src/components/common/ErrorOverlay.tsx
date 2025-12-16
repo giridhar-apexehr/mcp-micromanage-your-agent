@@ -4,10 +4,10 @@
  * Full-screen error overlay used when the application fails to load workplan data.
  */
 
-export type ErrorOverlayProps = {
-  loadError: string | null;
-  onReload: () => void;
-};
+type ErrorOverlayProps = {
+  loadError: string | null
+  onReload: () => void
+}
 
 /**
  * Displays a blocking error message with a reload action.
@@ -32,7 +32,5 @@ export function ErrorOverlay({ loadError, onReload }: ErrorOverlayProps) {
         </button>
       </div>
     </div>
-  );
+  )
 }
-
-export default ErrorOverlay;

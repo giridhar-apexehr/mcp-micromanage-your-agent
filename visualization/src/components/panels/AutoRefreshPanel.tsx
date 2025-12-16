@@ -6,16 +6,16 @@
  * Note: container positioning and open/close behavior are handled by the host.
  */
 
-export type AutoRefreshPanelProps = {
-  currentPollingSeconds: number;
-  presetsSeconds: number[];
-  draftPollingSeconds: string;
-  draftSecondsForSelection: number;
-  draftSecondsValid: boolean;
-  onSelectPresetSeconds: (seconds: number) => void;
-  onDraftSecondsChange: (value: string) => void;
-  onApply: () => void;
-};
+type AutoRefreshPanelProps = {
+  currentPollingSeconds: number
+  presetsSeconds: number[]
+  draftPollingSeconds: string
+  draftSecondsForSelection: number
+  draftSecondsValid: boolean
+  onSelectPresetSeconds: (seconds: number) => void
+  onDraftSecondsChange: (value: string) => void
+  onApply: () => void
+}
 
 /**
  * Auto-refresh settings panel.
@@ -28,20 +28,26 @@ export function AutoRefreshPanel({
   draftSecondsValid,
   onSelectPresetSeconds,
   onDraftSecondsChange,
-  onApply
+  onApply,
 }: AutoRefreshPanelProps) {
   return (
     <>
       <div className="auto-refresh-panel__header">
         <div className="auto-refresh-panel__title">Auto-refresh</div>
-        <div className="auto-refresh-panel__subtitle">Current: {currentPollingSeconds}s</div>
+        <div className="auto-refresh-panel__subtitle">
+          Current: {currentPollingSeconds}s
+        </div>
       </div>
 
       <div className="auto-refresh-panel__section">
         <div className="auto-refresh-panel__label">Presets</div>
-        <div className="auto-refresh-panel__preset-grid" role="listbox" aria-label="Preset durations">
+        <div
+          className="auto-refresh-panel__preset-grid"
+          role="listbox"
+          aria-label="Preset durations"
+        >
           {presetsSeconds.map((seconds) => {
-            const selected = seconds === draftSecondsForSelection;
+            const selected = seconds === draftSecondsForSelection
             return (
               <button
                 key={seconds}
@@ -52,13 +58,16 @@ export function AutoRefreshPanel({
               >
                 {seconds}s
               </button>
-            );
+            )
           })}
         </div>
       </div>
 
       <div className="auto-refresh-panel__section">
-        <label className="auto-refresh-panel__label" htmlFor="auto-refresh-seconds">
+        <label
+          className="auto-refresh-panel__label"
+          htmlFor="auto-refresh-seconds"
+        >
           Custom (seconds)
         </label>
         <input
@@ -84,7 +93,5 @@ export function AutoRefreshPanel({
         </button>
       </div>
     </>
-  );
+  )
 }
-
-export default AutoRefreshPanel;

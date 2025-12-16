@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo, useRef } from "react";
-import { X } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from 'react'
+import { X } from 'lucide-react'
 import ReactFlow, {
   MiniMap,
   Controls,
@@ -14,24 +14,24 @@ import ReactFlow, {
   EdgeProps,
   MarkerType,
   Position,
-} from "reactflow";
-import "reactflow/dist/style.css";
-import { WorkPlan, NodeData, ExtendedNode, CommitStatus } from "../types";
+} from 'reactflow'
+import 'reactflow/dist/style.css'
+import { WorkPlan, NodeData, ExtendedNode, CommitStatus } from '../types'
 import {
   convertWorkPlanToFlow,
   filterWorkplan,
   filterNodesAndEdges,
-} from "../utils/workplanConverter";
-import { useResponsiveFlowDimensions } from "../utils/responsiveUtils";
-import CommitNode from "./CommitNode";
-import type { CommitNodeData } from "./CommitNode";
-import PRNode from "./PRNode";
-import { FilterOptions } from "./panels/FilterPanel";
-import "./nodes/nodes.css";
+} from '../utils/workplanConverter'
+import { useResponsiveFlowDimensions } from '../utils/responsiveUtils'
+import CommitNode from './CommitNode'
+import type { CommitNodeData } from './CommitNode'
+import PRNode from './PRNode'
+import type { FilterOptions } from './panels/FilterPanel.types'
+import './nodes/nodes.css'
 
-export interface WorkplanFlowProps {
-  workplan: WorkPlan;
-  filterOptions: FilterOptions;
+interface WorkplanFlowProps {
+  workplan: WorkPlan
+  filterOptions: FilterOptions
 }
 
 // Custom edge component
@@ -51,8 +51,8 @@ const CustomEdge = ({
 }: EdgeProps & { className?: string }) => {
   // Adjust connection point calculation
   // Ensure targetPosition is set to Position.Left
-  const targetPos = targetPosition || Position.Left;
-  const sourcePos = sourcePosition || Position.Right;
+  const targetPos = targetPosition || Position.Left
+  const sourcePos = sourcePosition || Position.Right
 
   // Adjust arguments for getBezierPath
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -63,7 +63,7 @@ const CustomEdge = ({
     targetY,
     targetPosition: targetPos,
     curvature: 0.4,
-  });
+  })
 
   return (
     <>
@@ -72,10 +72,10 @@ const CustomEdge = ({
         style={{
           ...style,
           strokeWidth: style.strokeWidth || 2,
-          transition: "stroke 0.3s, stroke-width 0.3s",
+          transition: 'stroke 0.3s, stroke-width 0.3s',
         }}
-        className={`react-flow__edge-path ${animated ? "animated" : ""} ${
-          className || ""
+        className={`react-flow__edge-path ${animated ? 'animated' : ''} ${
+          className || ''
         }`}
         d={edgePath}
         markerEnd={markerEnd}
@@ -85,11 +85,11 @@ const CustomEdge = ({
           x={labelX}
           y={labelY}
           style={{
-            fontSize: "10px",
-            textAnchor: "middle",
-            dominantBaseline: "middle",
-            pointerEvents: "none",
-            fontWeight: "normal",
+            fontSize: '10px',
+            textAnchor: 'middle',
+            dominantBaseline: 'middle',
+            pointerEvents: 'none',
+            fontWeight: 'normal',
           }}
           className="react-flow__edge-text"
         >
@@ -97,97 +97,103 @@ const CustomEdge = ({
         </text>
       )}
     </>
-  );
-};
+  )
+}
 
 // Register custom node types
 const nodeTypes: NodeTypes = {
   commitNode: CommitNode,
   prNode: PRNode,
-};
+}
 
 // Register custom edge types
 const edgeTypes: EdgeTypes = {
   custom: CustomEdge,
-};
+}
 
 // Status label definitions
 const statusLabels: Record<CommitStatus, string> = {
-  not_started: "Not Started",
-  in_progress: "In Progress",
-  blocked: "Blocked",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  needsRefinment: "Needs Refinement",
-  user_review: "Awaiting User Review",
-};
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  blocked: 'Blocked',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+  needsRefinment: 'Needs Refinement',
+  user_review: 'Awaiting User Review',
+}
 
 const isCommitStatus = (value: unknown): value is CommitStatus => {
   return (
-    value === "not_started" ||
-    value === "in_progress" ||
-    value === "blocked" ||
-    value === "completed" ||
-    value === "cancelled" ||
-    value === "needsRefinment" ||
-    value === "user_review"
-  );
-};
+    value === 'not_started' ||
+    value === 'in_progress' ||
+    value === 'blocked' ||
+    value === 'completed' ||
+    value === 'cancelled' ||
+    value === 'needsRefinment' ||
+    value === 'user_review'
+  )
+}
 
-const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
-  const getNodeStatus = useCallback((data: unknown): CommitStatus | undefined => {
-    if (!data || typeof data !== "object") return undefined;
-    const maybeStatus = (data as { status?: unknown }).status;
-    return isCommitStatus(maybeStatus) ? maybeStatus : undefined;
-  }, []);
+export const WorkplanFlow = ({
+  workplan,
+  filterOptions,
+}: WorkplanFlowProps) => {
+  const getNodeStatus = useCallback(
+    (data: unknown): CommitStatus | undefined => {
+      if (!data || typeof data !== 'object') return undefined
+      const maybeStatus = (data as { status?: unknown }).status
+      return isCommitStatus(maybeStatus) ? maybeStatus : undefined
+    },
+    [],
+  )
 
   // Default filter options
   const defaultFilterOptions: FilterOptions = {
-    statusFilter: "all",
-    searchQuery: "",
+    statusFilter: 'all',
+    searchQuery: '',
     onlyShowActive: false,
-  };
+  }
 
   // Get responsive settings
   const { miniMapVisible, controlsStyle, miniMapStyle, currentBreakpoint } =
-    useResponsiveFlowDimensions();
+    useResponsiveFlowDimensions()
 
   // Use provided filter options or default
-  const activeFilterOptions = filterOptions || defaultFilterOptions;
+  const activeFilterOptions = filterOptions || defaultFilterOptions
 
   // Apply filtering
   const filteredWorkplan = useMemo(() => {
-    return filterWorkplan(workplan, activeFilterOptions);
-  }, [workplan, activeFilterOptions]);
+    return filterWorkplan(workplan, activeFilterOptions)
+  }, [workplan, activeFilterOptions])
 
   // Set initial nodes and edges (generated from filtered workplan)
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
-    return convertWorkPlanToFlow(filteredWorkplan);
-  }, [filteredWorkplan]);
+    return convertWorkPlanToFlow(filteredWorkplan)
+  }, [filteredWorkplan])
 
   // Add callbacks to commit nodes
   const nodesWithCallbacks = useMemo(() => {
     return initialNodes.map((node) => {
-      if (node.type === "commitNode") {
+      if (node.type === 'commitNode') {
         const nodeData = node.data as unknown as Partial<CommitNodeData> & {
-          label?: unknown;
-          status?: unknown;
-          title?: unknown;
-          prIndex?: unknown;
-          commitIndex?: unknown;
-        };
+          label?: unknown
+          status?: unknown
+          title?: unknown
+          prIndex?: unknown
+          commitIndex?: unknown
+        }
 
         const titleFromLabel =
-          typeof nodeData.label === "string" ? nodeData.label : "";
+          typeof nodeData.label === 'string' ? nodeData.label : ''
         const title =
-          typeof nodeData.title === "string" ? nodeData.title : titleFromLabel;
-        const status: CommitNodeData["status"] = isCommitStatus(nodeData.status)
+          typeof nodeData.title === 'string' ? nodeData.title : titleFromLabel
+        const status: CommitNodeData['status'] = isCommitStatus(nodeData.status)
           ? nodeData.status
-          : "not_started";
+          : 'not_started'
         const prIndex =
-          typeof nodeData.prIndex === "number" ? nodeData.prIndex : 0;
+          typeof nodeData.prIndex === 'number' ? nodeData.prIndex : 0
         const commitIndex =
-          typeof nodeData.commitIndex === "number" ? nodeData.commitIndex : 0;
+          typeof nodeData.commitIndex === 'number' ? nodeData.commitIndex : 0
 
         const normalizedData: CommitNodeData = {
           ...(nodeData as unknown as CommitNodeData),
@@ -195,148 +201,146 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
           status,
           prIndex,
           commitIndex,
-        };
+        }
         return {
           ...node,
           data: normalizedData,
-        };
+        }
       }
-      return node;
-    });
-  }, [initialNodes]);
+      return node
+    })
+  }, [initialNodes])
 
   // Change edge type to custom
   const customEdges = useMemo(() => {
     return initialEdges.map((edge) => ({
       ...edge,
-      type: "custom",
+      type: 'custom',
       data: { ...edge.data, label: edge.label },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: "currentColor",
+        color: 'currentColor',
       },
-    }));
-  }, [initialEdges]);
+    }))
+  }, [initialEdges])
 
   // Apply filtering directly to nodes and edges
   const { nodes: filteredNodes, edges: filteredEdges } = useMemo(() => {
     return filterNodesAndEdges(
       nodesWithCallbacks,
       customEdges,
-      activeFilterOptions
-    );
-  }, [nodesWithCallbacks, customEdges, activeFilterOptions]);
+      activeFilterOptions,
+    )
+  }, [nodesWithCallbacks, customEdges, activeFilterOptions])
 
   // Use handlers for interaction only
-  const [, , onNodesChange] = useNodesState([]);
-  const [, , onEdgesChange] = useEdgesState([]);
+  const [, , onNodesChange] = useNodesState([])
+  const [, , onEdgesChange] = useEdgesState([])
 
   // Selected node information
   const [selectedNode, setSelectedNode] =
-    useState<ExtendedNode<NodeData> | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const detailsCloseTimeoutRef = useRef<number | null>(null);
+    useState<ExtendedNode<NodeData> | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const detailsCloseTimeoutRef = useRef<number | null>(null)
 
   // Handler for node selection
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: ExtendedNode) => {
       if (detailsCloseTimeoutRef.current !== null) {
-        window.clearTimeout(detailsCloseTimeoutRef.current);
-        detailsCloseTimeoutRef.current = null;
+        window.clearTimeout(detailsCloseTimeoutRef.current)
+        detailsCloseTimeoutRef.current = null
       }
 
-      setSelectedNode(node as ExtendedNode<NodeData>);
-      setDetailsOpen(true);
+      setSelectedNode(node as ExtendedNode<NodeData>)
+      setDetailsOpen(true)
     },
-    []
-  );
+    [],
+  )
 
   // Handler for canvas click (deselection)
   const onPaneClick = useCallback(() => {
-    setDetailsOpen(false);
+    setDetailsOpen(false)
 
     if (detailsCloseTimeoutRef.current !== null) {
-      window.clearTimeout(detailsCloseTimeoutRef.current);
+      window.clearTimeout(detailsCloseTimeoutRef.current)
     }
 
     detailsCloseTimeoutRef.current = window.setTimeout(() => {
-      setSelectedNode(null);
-      detailsCloseTimeoutRef.current = null;
-    }, 180);
-  }, []);
+      setSelectedNode(null)
+      detailsCloseTimeoutRef.current = null
+    }, 180)
+  }, [])
 
   const detailsView = useMemo(() => {
-    if (!selectedNode) return null;
+    if (!selectedNode) return null
 
     const data = selectedNode.data as unknown as {
-      label?: unknown;
-      status?: unknown;
-      prIndex?: unknown;
-      commitIndex?: unknown;
-      title?: unknown;
-      developerNote?: unknown;
-    };
+      label?: unknown
+      status?: unknown
+      prIndex?: unknown
+      commitIndex?: unknown
+      title?: unknown
+      developerNote?: unknown
+    }
 
-    const status = getNodeStatus(data) ?? "not_started";
+    const status = getNodeStatus(data) ?? 'not_started'
 
     const commitIndex =
-      typeof data.commitIndex === "number" ? data.commitIndex : null;
+      typeof data.commitIndex === 'number' ? data.commitIndex : null
     const prIndexFromData =
-      typeof data.prIndex === "number" ? data.prIndex : null;
+      typeof data.prIndex === 'number' ? data.prIndex : null
     const prIndexFromId = (() => {
-      const match = /^pr-(\d+)$/.exec(selectedNode.id);
-      if (!match) return null;
-      const parsed = Number(match[1]);
-      return Number.isFinite(parsed) ? parsed : null;
-    })();
+      const match = /^pr-(\d+)$/.exec(selectedNode.id)
+      if (!match) return null
+      const parsed = Number(match[1])
+      return Number.isFinite(parsed) ? parsed : null
+    })()
 
-    const prIndex = prIndexFromData ?? prIndexFromId;
-    const isCommit = prIndexFromData !== null && commitIndex !== null;
+    const prIndex = prIndexFromData ?? prIndexFromId
+    const isCommit = prIndexFromData !== null && commitIndex !== null
 
     const title = (() => {
       if (isCommit) {
-        return `Commit #${commitIndex + 1}`;
+        return `Commit #${commitIndex + 1}`
       }
       if (prIndex !== null) {
-        return `PR #${prIndex + 1}`;
+        return `PR #${prIndex + 1}`
       }
-      return "Details";
-    })();
+      return 'Details'
+    })()
 
     const subtitle = (() => {
       if (isCommit && prIndex !== null) {
-        return `PR #${prIndex + 1} / Commit #${commitIndex + 1}`;
+        return `PR #${prIndex + 1} / Commit #${commitIndex + 1}`
       }
-      return "";
-    })();
+      return ''
+    })()
 
     const goal = (() => {
-      if (typeof data.title === "string" && data.title.trim())
-        return data.title;
-      if (typeof data.label === "string" && data.label.trim())
-        return data.label;
-      return "";
-    })();
+      if (typeof data.title === 'string' && data.title.trim()) return data.title
+      if (typeof data.label === 'string' && data.label.trim()) return data.label
+      return ''
+    })()
 
-    const prPlan = prIndex !== null ? filteredWorkplan.prPlans[prIndex] : null;
-    const agentNote = prPlan?.developerNote;
+    const prPlan = prIndex !== null ? filteredWorkplan.prPlans[prIndex] : null
+    const agentNote = prPlan?.developerNote
 
     const commitPlan =
       isCommit && prIndex !== null
         ? filteredWorkplan.prPlans[prIndex]?.commitPlans?.[commitIndex]
-        : null;
+        : null
 
     const developerNote = (() => {
-      if (!isCommit) return undefined;
-      if (commitPlan?.developerNote) return commitPlan.developerNote;
-      if (typeof data.developerNote === "string" && data.developerNote.trim())
-        return data.developerNote;
-      return undefined;
-    })();
+      if (!isCommit) return undefined
+      if (commitPlan?.developerNote) return commitPlan.developerNote
+      if (typeof data.developerNote === 'string' && data.developerNote.trim())
+        return data.developerNote
+      return undefined
+    })()
 
-    const statusLabel = statusLabels[status];
-    const statusColorVar = `var(--status-border-${status})`;
-    const statusFilled = status !== "not_started";
+    const statusLabel = statusLabels[status]
+    const statusColorVar = `var(--status-border-${status})`
+    const statusFilled = status !== 'not_started'
 
     return {
       title,
@@ -348,35 +352,35 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
       statusLabel,
       statusColorVar,
       statusFilled,
-    };
-  }, [filteredWorkplan.prPlans, selectedNode, getNodeStatus]);
+    }
+  }, [filteredWorkplan.prPlans, selectedNode, getNodeStatus])
 
   // Flow component style
-  const proOptions = { hideAttribution: true };
+  const proOptions = { hideAttribution: true }
 
   // FitView options based on current breakpoint
   const fitViewOptions = useMemo(
     () => ({
       padding:
-        currentBreakpoint === "xs"
+        currentBreakpoint === 'xs'
           ? 0.1
-          : currentBreakpoint === "sm"
-          ? 0.15
-          : 0.2,
+          : currentBreakpoint === 'sm'
+            ? 0.15
+            : 0.2,
       maxZoom: 1.5,
       includeHiddenNodes: false,
       minZoom: 0.2,
       alignmentX: 0.5, // Horizontal center
       alignmentY: 0, // Top alignment
     }),
-    [currentBreakpoint]
-  );
+    [currentBreakpoint],
+  )
 
   // Initial viewport settings
-  const defaultViewport = { x: 0, y: 0, zoom: 1 };
+  const defaultViewport = { x: 0, y: 0, zoom: 1 }
 
   return (
-    <div style={{ width: "100%", height: "100vh", position: "relative" }}>
+    <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
       <ReactFlow
         nodes={filteredNodes}
         edges={filteredEdges}
@@ -394,27 +398,27 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
         maxZoom={2}
       >
         {/* Display active filters - responsive */}
-        {(activeFilterOptions.statusFilter !== "all" ||
+        {(activeFilterOptions.statusFilter !== 'all' ||
           activeFilterOptions.searchQuery.trim() ||
           activeFilterOptions.onlyShowActive) && (
           <Panel
             position="top-left"
             className={`bg-white p-2 rounded-lg shadow-md border border-gray-200 ${
-              currentBreakpoint === "xs" ? "text-xs max-w-[80vw]" : ""
+              currentBreakpoint === 'xs' ? 'text-xs max-w-[80vw]' : ''
             }`}
           >
             <div
               className={`text-gray-700 ${
-                currentBreakpoint === "xs" ? "text-xs" : "text-sm"
+                currentBreakpoint === 'xs' ? 'text-xs' : 'text-sm'
               }`}
             >
               <span className="font-bold">Filters Applied:</span>
               <div
                 className={`flex flex-wrap gap-1 mt-1 ${
-                  currentBreakpoint === "xs" ? "max-w-full" : ""
+                  currentBreakpoint === 'xs' ? 'max-w-full' : ''
                 }`}
               >
-                {activeFilterOptions.statusFilter !== "all" && (
+                {activeFilterOptions.statusFilter !== 'all' && (
                   <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
                     Status: {activeFilterOptions.statusFilter}
                   </span>
@@ -440,14 +444,14 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
             style={miniMapStyle}
             nodeStrokeWidth={3}
             nodeColor={(node) => {
-              const status = getNodeStatus(node.data);
-              if (!status) return "var(--node-bg)";
-              return `var(--status-border-${status})`;
+              const status = getNodeStatus(node.data)
+              if (!status) return 'var(--node-bg)'
+              return `var(--status-border-${status})`
             }}
             nodeStrokeColor={(node) => {
-              const status = getNodeStatus(node.data);
-              if (!status) return "var(--node-border)";
-              return "var(--node-border)";
+              const status = getNodeStatus(node.data)
+              if (!status) return 'var(--node-border)'
+              return 'var(--node-border)'
             }}
             zoomable
             pannable
@@ -466,7 +470,7 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
         <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
 
         {/* Help information for mobile display */}
-        {currentBreakpoint === "xs" && (
+        {currentBreakpoint === 'xs' && (
           <Panel
             position="bottom-center"
             className="p-2 bg-white bg-opacity-80 rounded text-xs text-center"
@@ -480,12 +484,12 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
       {selectedNode && (
         <div
           className={`absolute details-panel ${
-            detailsOpen ? "is-open" : "is-closed"
+            detailsOpen ? 'is-open' : 'is-closed'
           }
             ${
-              currentBreakpoint === "xs"
-                ? "left-2 right-2 bottom-2"
-                : "right-4 top-4 w-72"
+              currentBreakpoint === 'xs'
+                ? 'left-2 right-2 bottom-2'
+                : 'right-4 top-4 w-72'
             }`}
         >
           <div className="details-panel__header">
@@ -504,13 +508,13 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
                 <div
                   className="details-panel__status"
                   style={{
-                    ["--details-status-color" as never]:
+                    ['--details-status-color' as never]:
                       detailsView.statusColorVar,
                   }}
                 >
                   <span
                     className={`details-panel__status-dot ${
-                      detailsView.statusFilled ? "is-filled" : ""
+                      detailsView.statusFilled ? 'is-filled' : ''
                     }`}
                     aria-hidden="true"
                   />
@@ -556,7 +560,5 @@ const WorkplanFlow = ({ workplan, filterOptions }: WorkplanFlowProps) => {
         </div>
       )}
     </div>
-  );
-};
-
-export default WorkplanFlow;
+  )
+}

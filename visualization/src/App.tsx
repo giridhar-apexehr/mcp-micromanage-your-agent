@@ -1,16 +1,17 @@
 import { useState, useCallback, useRef } from 'react'
-import FilterPanel, { FilterOptions } from './components/panels/FilterPanel'
-import OrientationWarning from './components/OrientationWarning'
+import { FilterPanel } from './components/panels/FilterPanel'
+import type { FilterOptions } from './components/panels/FilterPanel.types'
+import { OrientationWarning } from './components/OrientationWarning'
 import { useThemeMode } from './app/hooks/useThemeMode'
 import { useWorkplanData } from './app/hooks/useWorkplanData'
 import { usePolling } from './app/hooks/usePolling'
 import { useFloatingPanel } from './app/hooks/useFloatingPanel'
-import DashboardPage from './pages/DashboardPage'
-import WorkplanPage from './pages/WorkplanPage'
-import WorkplanTopbar from './components/workplan/WorkplanTopbar'
-import WorkplanActionsBar from './components/workplan/WorkplanActionsBar'
-import ErrorOverlay from './components/common/ErrorOverlay'
-import AutoRefreshPanel from './components/panels/AutoRefreshPanel'
+import { DashboardPage } from './pages/DashboardPage'
+import { WorkplanPage } from './pages/WorkplanPage'
+import { WorkplanTopbar } from './components/workplan/WorkplanTopbar'
+import { WorkplanActionsBar } from './components/workplan/WorkplanActionsBar'
+import { ErrorOverlay } from './components/common/ErrorOverlay'
+import { AutoRefreshPanel } from './components/panels/AutoRefreshPanel'
 import './App.css'
 
 function App() {
@@ -22,8 +23,8 @@ function App() {
     isLoading,
     loadData,
     openWorkplan,
-    goToDashboard: goToDashboardBase
-  } = useWorkplanData();
+    goToDashboard: goToDashboardBase,
+  } = useWorkplanData()
   const {
     pollingEnabled,
     togglePolling,
@@ -33,19 +34,19 @@ function App() {
     currentPollingSeconds,
     parsedDraftSeconds,
     draftSecondsValid,
-    draftSecondsForSelection
-  } = usePolling({ loadData });
-  const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0);
-  const autoRefreshAnchorRef = useRef<HTMLDivElement | null>(null);
-  const autoRefreshButtonRef = useRef<HTMLButtonElement | null>(null);
-  const autoRefreshPanelRef = useRef<HTMLDivElement | null>(null);
+    draftSecondsForSelection,
+  } = usePolling({ loadData })
+  const [refreshSpinTick, setRefreshSpinTick] = useState<number>(0)
+  const autoRefreshAnchorRef = useRef<HTMLDivElement | null>(null)
+  const autoRefreshButtonRef = useRef<HTMLButtonElement | null>(null)
+  const autoRefreshPanelRef = useRef<HTMLDivElement | null>(null)
 
-  const filterButtonRef = useRef<HTMLButtonElement | null>(null);
+  const filterButtonRef = useRef<HTMLButtonElement | null>(null)
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     statusFilter: 'all',
     searchQuery: '',
-    onlyShowActive: false
-  });
+    onlyShowActive: false,
+  })
 
   const autoRefreshPanel = useFloatingPanel({
     anchorRef: autoRefreshButtonRef,
@@ -56,8 +57,8 @@ function App() {
     margin: 10,
     minPanelWidth: 220,
     maxPanelWidth: 320,
-    closeDelayMs: 180
-  });
+    closeDelayMs: 180,
+  })
 
   const filterPanel = useFloatingPanel({
     anchorRef: filterButtonRef,
@@ -66,35 +67,40 @@ function App() {
     margin: 10,
     minPanelWidth: 200,
     maxPanelWidth: 320,
-    closeDelayMs: 180
-  });
+    closeDelayMs: 180,
+  })
 
-  const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode();
+  const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode()
 
   const goToDashboard = useCallback(() => {
-    autoRefreshPanel.reset();
-    filterPanel.reset();
-    goToDashboardBase();
-  }, [autoRefreshPanel, filterPanel, goToDashboardBase]);
+    autoRefreshPanel.reset()
+    filterPanel.reset()
+    goToDashboardBase()
+  }, [autoRefreshPanel, filterPanel, goToDashboardBase])
 
   // Filter options change handler
   const handleFilterChange = useCallback((newOptions: FilterOptions) => {
-    setFilterOptions(newOptions);
-  }, []);
+    setFilterOptions(newOptions)
+  }, [])
 
   const handleFilterClick = useCallback(() => {
-    filterPanel.toggle();
-  }, [filterPanel]);
+    filterPanel.toggle()
+  }, [filterPanel])
 
   const handleAutoRefreshDropdownClick = useCallback(() => {
-    autoRefreshPanel.toggle();
-  }, [autoRefreshPanel]);
+    autoRefreshPanel.toggle()
+  }, [autoRefreshPanel])
 
-  const AUTO_REFRESH_PRESETS_SECONDS = [1, 2, 5, 10, 30, 60];
+  const AUTO_REFRESH_PRESETS_SECONDS = [1, 2, 5, 10, 30, 60]
 
   // Fallback display for errors
   if (loadError) {
-    return <ErrorOverlay loadError={loadError} onReload={() => window.location.reload()} />;
+    return (
+      <ErrorOverlay
+        loadError={loadError}
+        onReload={() => window.location.reload()}
+      />
+    )
   }
 
   if (!workplan) {
@@ -107,7 +113,7 @@ function App() {
         lastLoadedTime={lastLoadedTime}
         openWorkplan={openWorkplan}
       />
-    );
+    )
   }
 
   return (
@@ -115,11 +121,11 @@ function App() {
       isDarkMode={isDarkMode}
       workplan={workplan}
       filterOptions={filterOptions}
-      header={(
+      header={
         <WorkplanTopbar
           title={workplan.goal}
           onBack={goToDashboard}
-          actions={(
+          actions={
             <WorkplanActionsBar
               lastLoadedTime={lastLoadedTime}
               pollingEnabled={pollingEnabled}
@@ -133,8 +139,8 @@ function App() {
               isLoading={isLoading}
               refreshSpinTick={refreshSpinTick}
               onRefresh={() => {
-                setRefreshSpinTick((prev) => prev + 1);
-                loadData();
+                setRefreshSpinTick((prev) => prev + 1)
+                loadData()
               }}
               themeMode={themeMode}
               onToggleThemeMode={toggleThemeMode}
@@ -142,29 +148,39 @@ function App() {
               filterButtonRef={filterButtonRef}
               onToggleFilterPanel={handleFilterClick}
             />
-          )}
+          }
         />
-      )}
+      }
     >
       {autoRefreshPanel.isRendered && autoRefreshPanel.position && (
         <div
           className={`auto-refresh-panel-container ${autoRefreshPanel.isOpen ? 'is-open' : 'is-closed'}`}
-          style={{ top: autoRefreshPanel.position.top, left: autoRefreshPanel.position.left }}
+          style={{
+            top: autoRefreshPanel.position.top,
+            left: autoRefreshPanel.position.left,
+          }}
         >
-          <div ref={autoRefreshPanelRef} className="auto-refresh-panel" role="dialog" aria-label="Auto-refresh settings">
+          <div
+            ref={autoRefreshPanelRef}
+            className="auto-refresh-panel"
+            role="dialog"
+            aria-label="Auto-refresh settings"
+          >
             <AutoRefreshPanel
               currentPollingSeconds={currentPollingSeconds}
               presetsSeconds={AUTO_REFRESH_PRESETS_SECONDS}
               draftPollingSeconds={draftPollingSeconds}
               draftSecondsForSelection={draftSecondsForSelection}
               draftSecondsValid={draftSecondsValid}
-              onSelectPresetSeconds={(seconds) => setDraftPollingSeconds(String(seconds))}
+              onSelectPresetSeconds={(seconds) =>
+                setDraftPollingSeconds(String(seconds))
+              }
               onDraftSecondsChange={setDraftPollingSeconds}
               onApply={() => {
-                if (!draftSecondsValid) return;
-                const nextMs = Math.round(parsedDraftSeconds) * 1000;
-                setPollingIntervalMs(nextMs);
-                autoRefreshPanel.close();
+                if (!draftSecondsValid) return
+                const nextMs = Math.round(parsedDraftSeconds) * 1000
+                setPollingIntervalMs(nextMs)
+                autoRefreshPanel.close()
               }}
             />
           </div>
@@ -174,7 +190,10 @@ function App() {
       {filterPanel.isRendered && filterPanel.position && (
         <div
           className={`filter-panel-container ${filterPanel.isOpen ? 'is-open' : 'is-closed'}`}
-          style={{ top: filterPanel.position.top, left: filterPanel.position.left }}
+          style={{
+            top: filterPanel.position.top,
+            left: filterPanel.position.left,
+          }}
         >
           <FilterPanel
             options={filterOptions}
@@ -185,11 +204,11 @@ function App() {
           />
         </div>
       )}
-      
+
       {/* Device orientation warning (mobile only) */}
       <OrientationWarning />
     </WorkplanPage>
-  );
+  )
 }
 
 export default App

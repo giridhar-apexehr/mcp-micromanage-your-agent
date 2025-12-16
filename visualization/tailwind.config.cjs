@@ -1,4 +1,4 @@
-const { heroui } = require('@heroui/theme');
+const { heroui } = require('@heroui/theme')
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -12,4 +12,4 @@ module.exports = {
   },
   darkMode: ['class', '.dark-mode'],
   plugins: [heroui()],
-};
+}

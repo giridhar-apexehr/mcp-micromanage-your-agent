@@ -8,19 +8,19 @@
  * - Workplan catalog list grouped by agent
  */
 
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun } from 'lucide-react'
 
-import type { ThemeMode } from '../app/hooks/useThemeMode';
-import type { WorkplanCatalog } from '../app/utils/workplanCatalog';
+import type { ThemeMode } from '../app/hooks/useThemeMode'
+import type { WorkplanCatalog } from '../app/utils/workplanCatalog'
 
-export type DashboardPageProps = {
-  isDarkMode: boolean;
-  themeMode: ThemeMode;
-  toggleThemeMode: () => void;
-  workplanCatalog: WorkplanCatalog | null;
-  lastLoadedTime: Date | null;
-  openWorkplan: (agentId: string, workplanId: string) => void;
-};
+type DashboardPageProps = {
+  isDarkMode: boolean
+  themeMode: ThemeMode
+  toggleThemeMode: () => void
+  workplanCatalog: WorkplanCatalog | null
+  lastLoadedTime: Date | null
+  openWorkplan: (agentId: string, workplanId: string) => void
+}
 
 /**
  * Dashboard page showing available agents/workplans.
@@ -31,7 +31,7 @@ export function DashboardPage({
   toggleThemeMode,
   workplanCatalog,
   lastLoadedTime,
-  openWorkplan
+  openWorkplan,
 }: DashboardPageProps) {
   return (
     <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
@@ -39,7 +39,10 @@ export function DashboardPage({
         <div className="topbar-inner">
           <div className="topbar-brand">
             <div className="topbar-title">Workplans</div>
-            <div className="topbar-subtitle" title="Select an agent and workplan">
+            <div
+              className="topbar-subtitle"
+              title="Select an agent and workplan"
+            >
               Select an agent and workplan
             </div>
           </div>
@@ -52,7 +55,13 @@ export function DashboardPage({
               title="Toggle theme"
               type="button"
             >
-              {themeMode === 'system' ? <Monitor size={16} /> : themeMode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+              {themeMode === 'system' ? (
+                <Monitor size={16} />
+              ) : themeMode === 'dark' ? (
+                <Moon size={16} />
+              ) : (
+                <Sun size={16} />
+              )}
             </button>
           </div>
         </div>
@@ -63,7 +72,9 @@ export function DashboardPage({
           <div className="morphic-panel">
             <div className="morphic-panel-title">Dashboard</div>
             <div className="text-sm opacity-80 mb-4">
-              {lastLoadedTime ? `Last updated: ${lastLoadedTime.toLocaleTimeString()}` : 'Loading...'}
+              {lastLoadedTime
+                ? `Last updated: ${lastLoadedTime.toLocaleTimeString()}`
+                : 'Loading...'}
             </div>
 
             <div className="space-y-6">
@@ -79,14 +90,24 @@ export function DashboardPage({
                           key={`${agent.agentId}:${wp.workplanId}`}
                           type="button"
                           className="morphic-row-button"
-                          onClick={() => openWorkplan(agent.agentId, wp.workplanId)}
+                          onClick={() =>
+                            openWorkplan(agent.agentId, wp.workplanId)
+                          }
                           disabled={!wp.hasTicket}
-                          title={wp.hasTicket ? 'Open workplan' : 'No ticket planned for this workplan'}
+                          title={
+                            wp.hasTicket
+                              ? 'Open workplan'
+                              : 'No ticket planned for this workplan'
+                          }
                         >
                           <div className="flex items-center justify-between gap-4">
                             <div className="min-w-0">
-                              <div className="font-medium truncate">{wp.workplanId}</div>
-                              <div className="text-sm opacity-75 truncate">{wp.goal ?? 'No ticket'}</div>
+                              <div className="font-medium truncate">
+                                {wp.workplanId}
+                              </div>
+                              <div className="text-sm opacity-75 truncate">
+                                {wp.goal ?? 'No ticket'}
+                              </div>
                             </div>
                             <div className="opacity-70">›</div>
                           </div>
@@ -101,7 +122,5 @@ export function DashboardPage({
         </div>
       </main>
     </div>
-  );
+  )
 }
-
-export default DashboardPage;

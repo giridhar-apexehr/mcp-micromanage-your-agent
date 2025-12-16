@@ -13,7 +13,7 @@ import type { ReactNode } from 'react'
 /**
  * Props for the Header component.
  */
-export type HeaderProps = {
+type HeaderProps = {
   /**
    * Optional left-side navigation slot.
    *
@@ -88,5 +88,3 @@ export function Header({
     </header>
   )
 }
-
-export default Header
