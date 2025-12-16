@@ -35,6 +35,8 @@ export const taskPlanningGuide = {
 - This toolset supports multiple agents and multiple workplans.
 - \`agentId\` is required on every tool call.
 - \`workplanId\` is required on every tool call.
+- \`agentId\` should be your agent name (a stable identifier you keep using across the session).
+- \`workplanId\` should be a short kebab-cased identifier you choose (e.g., \`ticket-123-auth-flow\`) and then reuse for the current ticket/thread.
 - The planning and status transition rules apply **within the selected (agentId, workplanId)**.
 
 ## Method
@@ -93,6 +95,7 @@ export const progressInstructionGuide = {
   **Multiple Workplans**:
   - If the progress report includes \`agentId\` and \`workplanId\`, treat that tuple as the scope for all status invariants and next-step suggestions.
   - If you need to manage more than one plan in parallel, explicitly pick an \`agentId\` and \`workplanId\` and keep discussions and updates scoped to it.
+  - Use your agent name as \`agentId\`, and use a kebab-cased \`workplanId\` that you reuse for the current ticket/thread.
 
   **Always secure the user's agreement before starting the next task.**
 `};
