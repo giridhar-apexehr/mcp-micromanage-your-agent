@@ -167,10 +167,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   }, [isOpen]);
   
   return (
-    <div ref={panelRef} className="filter-panel" role="dialog" aria-label="Filter settings">
-      <div className="filter-panel__header">
-        <div className="filter-panel__title">
-          <span aria-hidden="true">
+    <div ref={panelRef} className="auto-refresh-panel filter-panel" role="dialog" aria-label="Filter settings">
+      <div className="auto-refresh-panel__header">
+        <div className="auto-refresh-panel__title filter-panel__title">
+          <span className="filter-panel__title-icon" aria-hidden="true">
             <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
           </span>
           Filter Settings
@@ -180,15 +180,15 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         </button>
       </div>
 
-      <div className="filter-panel__content">
+      <div className="auto-refresh-panel__section">
         {/* Status filter */}
         <div className="filter-panel__field">
-          <label className="filter-panel__label">Status</label>
+          <label className="auto-refresh-panel__label">Status</label>
           <div className="relative">
             <button
               ref={statusTriggerRef}
               type="button"
-              className="filter-panel__control"
+              className="auto-refresh-panel__input filter-panel__control"
               aria-haspopup="listbox"
               aria-expanded={isStatusMenuOpen}
               aria-label="Status"
@@ -288,13 +288,17 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
           </div>
         </div>
-        
+
+      </div>
+
+      <div className="auto-refresh-panel__section">
         {/* Search filter */}
         <div className="filter-panel__field">
-          <label className="filter-panel__label">Search</label>
+          <label className="auto-refresh-panel__label">Search</label>
           <div className="relative">
             <input
               type="text"
+              className="auto-refresh-panel__input filter-panel__input"
               value={localOptions.searchQuery}
               onChange={(e) => handleChange('searchQuery', e.target.value)}
               placeholder="Search in commit content..."
@@ -314,7 +318,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             )}
           </div>
         </div>
-        
+
         {/* Show only active items */}
         <label className="filter-panel__toggle" htmlFor="onlyActive">
           <input
@@ -327,7 +331,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           <span className="filter-panel__check" aria-hidden="true" />
           <span className="filter-panel__toggle-label">Show only active tasks</span>
         </label>
-        
+
         {/* Filter badge display */}
         {(localOptions.statusFilter !== 'all' || 
          localOptions.searchQuery.trim() || 
@@ -385,12 +389,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
         )}
 
-        <div className="filter-panel__footer">
+      </div>
+
+      <div className="auto-refresh-panel__footer">
           <button onClick={handleReset} className="morphic-btn filter-panel__reset" type="button">
             <RotateCcw className="morphic-icon" size={16} strokeWidth={2} aria-hidden="true" />
             Reset
           </button>
-        </div>
       </div>
     </div>
   );
