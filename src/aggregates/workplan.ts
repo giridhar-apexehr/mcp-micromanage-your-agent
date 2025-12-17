@@ -1,4 +1,5 @@
 import { progressInstructionGuide } from '../prompts.js';
+import fs from 'fs';
 import { Ticket, planTicket, ensureTicketExists } from '../values/ticket.js';
 import { PullRequest, updatePRStatusBasedOnCommits, generatePRSummaries } from '../values/pullRequest.js';
 import { Status, validateStatusTransition } from '../values/status.js';
@@ -38,6 +39,7 @@ export interface InsertCommitInput {
 export interface WorkPlanInitOptions {
   dataDir?: string;         // データディレクトリパス
   dataFileName?: string;    // データファイル名
+  legacyWriterEnabled?: boolean;
 }
 
 // helpers
@@ -88,6 +90,8 @@ export class WorkPlan {
   private initialized: boolean = false;
   private lastUpdated: string = new Date().toISOString();
   private readonly version: string = "3.0.0"; // データ形式のバージョン
+  private legacyMigrationNeeded: boolean = false;
+  private legacyWriterEnabled: boolean = false;
   
   constructor(options?: WorkPlanInitOptions) {
     // 初期化オプションの処理
@@ -95,6 +99,112 @@ export class WorkPlan {
       this.initialize(options);
     }
 
+  }
+
+  private loadTicketFromFile(agentId: string, workplanId: string): Ticket | "noTicket" {
+    try {
+      const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+      if (!fs.existsSync(filePath)) {
+        return "noTicket";
+      }
+
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(raw) as unknown;
+
+      if (!parsed || typeof parsed !== 'object') {
+        return "noTicket";
+      }
+
+      const ticket = parsed as Partial<Ticket>;
+      if (typeof ticket.goal !== 'string' || !Array.isArray((ticket as { pullRequests?: unknown }).pullRequests)) {
+        return "noTicket";
+      }
+
+      return ticket as Ticket;
+    } catch (error) {
+      logger.logError('Failed to load ticket from per-workplan file', error);
+      return "noTicket";
+    }
+  }
+
+  private saveTicketToFile(agentId: string, workplanId: string, ticket: Ticket | "noTicket"): boolean {
+    try {
+      const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+      return fileStorage.writeJsonAtomic(filePath, ticket);
+    } catch (error) {
+      logger.logError('Failed to save ticket to per-workplan file', error);
+      return false;
+    }
+  }
+
+  private migrateWorkplanFilesFromLegacyIfNeeded(): void {
+    if (!this.legacyMigrationNeeded) {
+      return;
+    }
+
+    let writtenCount = 0;
+    let skippedCount = 0;
+
+    for (const [agentId, agentState] of Object.entries(this.agents)) {
+      for (const [workplanId, ticket] of Object.entries(agentState.workplans ?? {})) {
+        if (ticket === 'noTicket') {
+          continue;
+        }
+
+        const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+        if (fs.existsSync(filePath)) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const saved = this.saveTicketToFile(agentId, workplanId, ticket);
+        if (saved) {
+          writtenCount += 1;
+        }
+      }
+    }
+
+    logger.info(`Migrated ${writtenCount} workplan file(s) (${skippedCount} skipped)`);
+  }
+
+  private migrateAgentsIndexFromLegacyIfNeeded(): void {
+    if (!this.legacyMigrationNeeded) {
+      return;
+    }
+
+    const updated = fileStorage.updateAgentsIndex((state) => {
+      const next = state;
+
+      for (const [agentId, agentState] of Object.entries(this.agents)) {
+        if (!next.agents[agentId]) {
+          next.agents[agentId] = { workplans: {} };
+        }
+        if (!next.agents[agentId].workplans) {
+          next.agents[agentId].workplans = {};
+        }
+
+        for (const [workplanId, ticket] of Object.entries(agentState.workplans ?? {})) {
+          if (ticket === 'noTicket') {
+            continue;
+          }
+
+          const prCount = ticket.pullRequests.length;
+          const commitCount = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+          const entryLastUpdated = new Date().toISOString();
+
+          next.agents[agentId].workplans[workplanId] = {
+            goal: ticket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        }
+      }
+    });
+
+    if (!updated) {
+      logger.warn('Failed to migrate agents index from legacy state');
+    }
   }
 
   public insertCommit(input: InsertCommitInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
@@ -118,7 +228,10 @@ export class WorkPlan {
         return errorResponse(`No agent found for agentId: ${agentId}`);
       }
 
-      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
+      const fileTicket = this.loadTicketFromFile(agentId, workplanId);
+      const workingTicket = fileTicket !== "noTicket" ? fileTicket : (agentState.workplans[workplanId] ?? "noTicket");
+
+      const ticketCheck = ensureTicketExists(workingTicket, true);
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -174,6 +287,43 @@ export class WorkPlan {
 
       ticket.pullRequests[prIndex] = updatedPr;
 
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      } else {
+        const prCount = ticket.pullRequests.length;
+        const commitCount = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+
+        const entryLastUpdated = new Date().toISOString();
+        const indexUpdated = fileStorage.updateAgentsIndex((state) => {
+          const next = state;
+          if (!next.agents[agentId]) {
+            next.agents[agentId] = { workplans: {} };
+          }
+          if (!next.agents[agentId].workplans) {
+            next.agents[agentId].workplans = {};
+          }
+          next.agents[agentId].workplans[workplanId] = {
+            goal: ticket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        });
+
+        if (!indexUpdated) {
+          logger.warn(`Failed to update agents index for agentId=${agentId}, workplanId=${workplanId}`);
+        }
+      }
+
+      this.agents = {
+        ...this.agents,
+        [agentId]: {
+          ...agentState,
+          workplans: { ...agentState.workplans, [workplanId]: ticket }
+        }
+      };
+
       const saveSuccess = this.saveState();
 
       return {
@@ -217,12 +367,16 @@ export class WorkPlan {
       if (options.dataFileName) {
         fileStorage.setDataFileName(options.dataFileName);
       }
+
+      if (typeof options.legacyWriterEnabled === 'boolean') {
+        this.legacyWriterEnabled = options.legacyWriterEnabled;
+      }
       
       // 常に自動的にデータをロードする
       this.loadState();
       
       // ファイルが存在しない場合に常に新規作成
-      if (!fileStorage.fileExists()) {
+      if (this.legacyWriterEnabled && !fileStorage.fileExists()) {
         logger.info('Creating initial data file as it does not exist');
         this.saveState();
       }
@@ -253,6 +407,34 @@ export class WorkPlan {
         lastUpdated: this.lastUpdated,
         version: this.version
       };
+
+      const agentsIndexExists = fs.existsSync(fileStorage.getAgentsIndexPath());
+      const legacyWorkplanExists = fs.existsSync(fileStorage.getDataFilePath());
+      this.legacyMigrationNeeded = !agentsIndexExists && legacyWorkplanExists;
+      logger.info(
+        `Migration check: agentsIndexExists=${agentsIndexExists}, legacyWorkplanExists=${legacyWorkplanExists}, legacyMigrationNeeded=${this.legacyMigrationNeeded}`,
+      );
+
+      if (agentsIndexExists) {
+        const index = fileStorage.loadAgentsIndex({ agents: {} });
+
+        this.agents = Object.fromEntries(
+          Object.entries(index.agents ?? {}).map(([agentId, agentEntry]) => {
+            const workplans = Object.fromEntries(
+              Object.keys(agentEntry.workplans ?? {}).map((workplanId) => [
+                workplanId,
+                this.loadTicketFromFile(agentId, workplanId),
+              ]),
+            ) as Record<string, Ticket | "noTicket">;
+
+            return [agentId, { workplans } satisfies AgentWorkPlanState];
+          }),
+        );
+
+        this.lastUpdated = index.lastUpdated || new Date().toISOString();
+        logger.info(`WorkPlan state loaded from agents index: ${fileStorage.getAgentsIndexPath()}`);
+        return;
+      }
 
       const savedStateRaw = fileStorage.loadFromFile<unknown>(defaultState);
 
@@ -343,6 +525,9 @@ export class WorkPlan {
 
       logger.info(`WorkPlan state loaded from file: ${fileStorage.getDataFilePath()}`);
 
+      this.migrateWorkplanFilesFromLegacyIfNeeded();
+      this.migrateAgentsIndexFromLegacyIfNeeded();
+
       const agentCount = Object.keys(this.agents).length;
       if (!agentCount) {
         logger.info('No agents found in loaded state');
@@ -365,11 +550,20 @@ export class WorkPlan {
         lastUpdated: this.lastUpdated,
         version: this.version
       };
-      
-      const success = fileStorage.saveToFile<WorkPlanState>(state);
+
+      let success = true;
+      if (this.legacyWriterEnabled) {
+        success = fileStorage.saveToFile<WorkPlanState>(state);
+      } else {
+        logger.info('Legacy writer disabled; skipping monolithic state write');
+      }
       
       if (success) {
-        logger.info(`WorkPlan state saved to file: ${fileStorage.getDataFilePath()}`);
+        if (this.legacyWriterEnabled) {
+          logger.info(`WorkPlan state saved to file: ${fileStorage.getDataFilePath()}`);
+        } else {
+          logger.info('WorkPlan state saved (legacy writer disabled)');
+        }
       } else {
         logger.error('Failed to save WorkPlan state to file');
       }
@@ -399,6 +593,35 @@ export class WorkPlan {
       
       logger.info(`Creating plan with goal: ${input.goal}, ${input.prPlans.length} PRs`);
       const newTicket = planTicket(input);
+
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, newTicket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      } else {
+        const prCount = newTicket.pullRequests.length;
+        const commitCount = newTicket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+
+        const entryLastUpdated = new Date().toISOString();
+        const indexUpdated = fileStorage.updateAgentsIndex((state) => {
+          const next = state;
+          if (!next.agents[agentId]) {
+            next.agents[agentId] = { workplans: {} };
+          }
+          if (!next.agents[agentId].workplans) {
+            next.agents[agentId].workplans = {};
+          }
+          next.agents[agentId].workplans[workplanId] = {
+            goal: newTicket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        });
+
+        if (!indexUpdated) {
+          logger.warn(`Failed to update agents index for agentId=${agentId}, workplanId=${workplanId}`);
+        }
+      }
 
       const agentState: AgentWorkPlanState = this.agents[agentId] ?? { workplans: {} };
       const existing = agentState.workplans[workplanId] ?? "noTicket";
@@ -564,7 +787,10 @@ export class WorkPlan {
         return errorResponse(`No agent found for agentId: ${agentId}`);
       }
 
-      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
+      const fileTicket = this.loadTicketFromFile(agentId, workplanId);
+      const workingTicket = fileTicket !== "noTicket" ? fileTicket : (agentState.workplans[workplanId] ?? "noTicket");
+
+      const ticketCheck = ensureTicketExists(workingTicket, true);
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -590,6 +816,43 @@ export class WorkPlan {
           ticket.pullRequests[prIndex].developerNote = input.developerNote;
           changes.push(`PR developer note updated`);
           logger.info(`Updated PR developer note: ${input.developerNote}`);
+
+          const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+          if (!perWorkplanSaved) {
+            logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+          } else {
+            const prCount = ticket.pullRequests.length;
+            const commitCount = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+
+            const entryLastUpdated = new Date().toISOString();
+            const indexUpdated = fileStorage.updateAgentsIndex((state) => {
+              const next = state;
+              if (!next.agents[agentId]) {
+                next.agents[agentId] = { workplans: {} };
+              }
+              if (!next.agents[agentId].workplans) {
+                next.agents[agentId].workplans = {};
+              }
+              next.agents[agentId].workplans[workplanId] = {
+                goal: ticket.goal,
+                prCount,
+                commitCount,
+                lastUpdated: entryLastUpdated,
+              };
+            });
+
+            if (!indexUpdated) {
+              logger.warn(`Failed to update agents index for agentId=${agentId}, workplanId=${workplanId}`);
+            }
+          }
+
+          this.agents = {
+            ...this.agents,
+            [agentId]: {
+              ...agentState,
+              workplans: { ...agentState.workplans, [workplanId]: ticket }
+            }
+          };
 
           // 変更をファイルに保存
           const saveSuccess = this.saveState();
@@ -676,9 +939,46 @@ export class WorkPlan {
       if (input.developerNote !== undefined) {
         ticket.pullRequests[prIndex].commits[commitIndex].developerNote = input.developerNote;
         changes.push(`developer note updated`);
-        logger.info(`Updated commit developer note: ${input.developerNote}`);
+        logger.info(`Updated developer note: ${input.developerNote}`);
       }
-      
+
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      } else {
+        const prCount = ticket.pullRequests.length;
+        const commitCount = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+
+        const entryLastUpdated = new Date().toISOString();
+        const indexUpdated = fileStorage.updateAgentsIndex((state) => {
+          const next = state;
+          if (!next.agents[agentId]) {
+            next.agents[agentId] = { workplans: {} };
+          }
+          if (!next.agents[agentId].workplans) {
+            next.agents[agentId].workplans = {};
+          }
+          next.agents[agentId].workplans[workplanId] = {
+            goal: ticket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        });
+
+        if (!indexUpdated) {
+          logger.warn(`Failed to update agents index for agentId=${agentId}, workplanId=${workplanId}`);
+        }
+      }
+
+      this.agents = {
+        ...this.agents,
+        [agentId]: {
+          ...agentState,
+          workplans: { ...agentState.workplans, [workplanId]: ticket }
+        }
+      };
+
       // 変更をファイルに保存
       const saveSuccess = this.saveState();
       

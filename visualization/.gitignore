@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Project specific files
-public/data/workplan.json
+public/data/*.json
