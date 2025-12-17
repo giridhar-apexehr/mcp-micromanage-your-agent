@@ -2,6 +2,7 @@
 @import "./theme/tokens.css";
 @import "./theme/base.css";
 @import "./theme/primitives.css";
+@import "./theme/topbar.css";
 
 @media (prefers-color-scheme: light) {
   :root {
