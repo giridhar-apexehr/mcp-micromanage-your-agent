@@ -21,6 +21,16 @@ const hasTicketGoal = (ticket: unknown): ticket is { goal: string } => {
   return isRecord(ticket) && typeof ticket.goal === 'string'
 }
 
+const hasTicketEntry = (ticket: unknown): boolean => {
+  return ticket !== 'noTicket' && isRecord(ticket)
+}
+
+const getTicketGoal = (ticket: unknown): string | undefined => {
+  return isRecord(ticket) && typeof ticket.goal === 'string'
+    ? String(ticket.goal)
+    : undefined
+}
+
 /**
  * Builds a normalized catalog of agents and workplans from the JSON payload.
  *
@@ -44,10 +54,10 @@ export const buildWorkplanCatalog = (
 
         const workplans = Object.entries(rawWorkplans)
           .map(([workplanId, ticket]) => {
-            const hasTicket = hasTicketGoal(ticket)
+            const hasTicket = hasTicketEntry(ticket)
             return {
               workplanId,
-              goal: hasTicket ? String(ticket.goal) : undefined,
+              goal: getTicketGoal(ticket),
               hasTicket,
             }
           })
