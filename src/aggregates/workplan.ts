@@ -437,6 +437,11 @@ export class WorkPlan {
       logger.info(`Creating plan with goal: ${input.goal}, ${input.prPlans.length} PRs`);
       const newTicket = planTicket(input);
 
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, newTicket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      }
+
       const agentState: AgentWorkPlanState = this.agents[agentId] ?? { workplans: {} };
       const existing = agentState.workplans[workplanId] ?? "noTicket";
       const isReplacing = existing !== "noTicket";
