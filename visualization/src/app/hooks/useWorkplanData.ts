@@ -62,17 +62,19 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
       }
 
       const timestamp = new Date().getTime()
-      const response = await fetch(
-        `/data/workplan.json?t=${timestamp}`,
+      const agentsIndexResponse = await fetch(
+        `/data/agents.json?t=${timestamp}`,
         fetchOptions,
       )
-      if (!response.ok) {
-        throw new Error(`Failed to fetch data. Status: ${response.status}`)
+      if (!agentsIndexResponse.ok) {
+        throw new Error(
+          `Failed to fetch agents index. Status: ${agentsIndexResponse.status}`,
+        )
       }
 
-      const actualWorkPlan: unknown = await response.json()
+      const agentsIndex: unknown = await agentsIndexResponse.json()
 
-      const catalog = buildWorkplanCatalog(actualWorkPlan)
+      const catalog = buildWorkplanCatalog(agentsIndex)
       setWorkplanCatalog(catalog)
 
       const selectionState = window.history.state as {
@@ -80,14 +82,29 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
       } | null
       const selectedByUser = selectionState?.selected === true
 
+      if (!selectedByUser) {
+        setWorkplan(null)
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
+      }
+
+      const workplanResponse = await fetch(
+        `/data/workplan.json?t=${timestamp}`,
+        fetchOptions,
+      )
+      if (!workplanResponse.ok) {
+        throw new Error(
+          `Failed to fetch workplan data. Status: ${workplanResponse.status}`,
+        )
+      }
+
+      const actualWorkPlan: unknown = await workplanResponse.json()
+
       const resolvedTicket = (() => {
         const urlParams = new URLSearchParams(window.location.search)
         const requestedAgentId = urlParams.get('agentId')
         const requestedWorkplanId = urlParams.get('workplanId')
-
-        if (!selectedByUser) {
-          return null
-        }
 
         if (isRecord(actualWorkPlan)) {
           const record = actualWorkPlan
