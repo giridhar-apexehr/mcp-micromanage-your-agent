@@ -124,6 +124,31 @@ npm run test:responsive
 
 テスト結果のスクリーンショットは `test/screenshots` ディレクトリに保存されます。
 
+## HeroUI Integration
+
+The application now uses HeroUI for components while preserving the existing "morphic" theme:
+
+### Theme Customization
+- **Tokens**: `src/theme/tokens.css` defines CSS variables for light/dark modes
+- **Base**: `src/theme/base.css` provides body and base button resets
+- **Primitives**: `src/theme/primitives.css` contains `.morphic-*` component styles
+- **Topbar**: `src/theme/topbar.css` provides header/topbar styling
+- **Imports**: `src/index.css` imports theme files in order (tokens → base → primitives → topbar)
+
+### Dark Mode
+- Standardized on `html.dark-mode` class (Tailwind config: `darkMode: ['class', '.dark-mode']`)
+- `useThemeMode` hook adds/removes only `.dark-mode` on `<html>`
+- No `.dark` class usage in CSS/JSX
+
+### Component Variants
+- `MorphicButton` wraps HeroUI Button with `extendVariants` for morphic styling
+- Custom variants enabled by default to match existing look
+
+### Styling Architecture
+- Theme styles separated from component styles
+- Component styles colocated with components
+- ReactFlow components and styles remain unchanged
+
 ## ライセンス
 
 このプロジェクトは内部利用のみを目的としています。
