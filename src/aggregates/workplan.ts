@@ -89,6 +89,7 @@ export class WorkPlan {
   private initialized: boolean = false;
   private lastUpdated: string = new Date().toISOString();
   private readonly version: string = "3.0.0"; // データ形式のバージョン
+  private legacyMigrationNeeded: boolean = false;
   
   constructor(options?: WorkPlanInitOptions) {
     // 初期化オプションの処理
@@ -330,6 +331,13 @@ export class WorkPlan {
         lastUpdated: this.lastUpdated,
         version: this.version
       };
+
+      const agentsIndexExists = fs.existsSync(fileStorage.getAgentsIndexPath());
+      const legacyWorkplanExists = fs.existsSync(fileStorage.getDataFilePath());
+      this.legacyMigrationNeeded = !agentsIndexExists && legacyWorkplanExists;
+      logger.info(
+        `Migration check: agentsIndexExists=${agentsIndexExists}, legacyWorkplanExists=${legacyWorkplanExists}, legacyMigrationNeeded=${this.legacyMigrationNeeded}`,
+      );
 
       const savedStateRaw = fileStorage.loadFromFile<unknown>(defaultState);
 
