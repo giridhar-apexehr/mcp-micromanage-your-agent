@@ -133,9 +133,13 @@ function WorkplanActionsBar({
         },
       })
 
+      const now = new Date()
+      const pad2 = (value: number) => String(value).padStart(2, '0')
+      const timestamp = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}-${pad2(now.getHours())}-${pad2(now.getMinutes())}-${pad2(now.getSeconds())}`
+
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = 'workplan-snapshot.png'
+      a.download = `workplan-snapshot-${timestamp}.png`
       a.click()
     } finally {
       flowRoot.style.width = prevWidth
