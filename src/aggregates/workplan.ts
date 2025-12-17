@@ -165,6 +165,46 @@ export class WorkPlan {
     logger.info(`Migrated ${writtenCount} workplan file(s) (${skippedCount} skipped)`);
   }
 
+  private migrateAgentsIndexFromLegacyIfNeeded(): void {
+    if (!this.legacyMigrationNeeded) {
+      return;
+    }
+
+    const updated = fileStorage.updateAgentsIndex((state) => {
+      const next = state;
+
+      for (const [agentId, agentState] of Object.entries(this.agents)) {
+        if (!next.agents[agentId]) {
+          next.agents[agentId] = { workplans: {} };
+        }
+        if (!next.agents[agentId].workplans) {
+          next.agents[agentId].workplans = {};
+        }
+
+        for (const [workplanId, ticket] of Object.entries(agentState.workplans ?? {})) {
+          if (ticket === 'noTicket') {
+            continue;
+          }
+
+          const prCount = ticket.pullRequests.length;
+          const commitCount = ticket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+          const entryLastUpdated = new Date().toISOString();
+
+          next.agents[agentId].workplans[workplanId] = {
+            goal: ticket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        }
+      }
+    });
+
+    if (!updated) {
+      logger.warn('Failed to migrate agents index from legacy state');
+    }
+  }
+
   public insertCommit(input: InsertCommitInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       if (!this.initialized) {
@@ -459,6 +499,7 @@ export class WorkPlan {
       logger.info(`WorkPlan state loaded from file: ${fileStorage.getDataFilePath()}`);
 
       this.migrateWorkplanFilesFromLegacyIfNeeded();
+      this.migrateAgentsIndexFromLegacyIfNeeded();
 
       const agentCount = Object.keys(this.agents).length;
       if (!agentCount) {
