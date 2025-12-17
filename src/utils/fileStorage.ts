@@ -72,6 +72,81 @@ export function saveToFile<T>(data: T): boolean {
   }
 }
 
+const sleepSync = (ms: number): void => {
+  if (ms <= 0) return;
+  const buffer = new SharedArrayBuffer(4);
+  const view = new Int32Array(buffer);
+  Atomics.wait(view, 0, 0, ms);
+};
+
+export type FileLockOptions = {
+  retries?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+};
+
+export type FileLockHandle = {
+  filePath: string;
+  fd: number;
+};
+
+export function acquireFileLock(filePath: string, options: FileLockOptions = {}): FileLockHandle {
+  const retries = options.retries ?? 50;
+  const initialDelayMs = options.initialDelayMs ?? 25;
+  const maxDelayMs = options.maxDelayMs ?? 250;
+
+  ensureDirectoryExists(path.dirname(filePath));
+
+  let attempt = 0;
+  let delay = initialDelayMs;
+  while (true) {
+    try {
+      const fd = fs.openSync(filePath, 'wx');
+      try {
+        fs.writeFileSync(fd, `${process.pid} ${new Date().toISOString()}`, 'utf8');
+      } catch {
+        // ignore lock file metadata write failures
+      }
+      return { filePath, fd };
+    } catch (error) {
+      const err = error as NodeJS.ErrnoException;
+      if (err.code !== 'EEXIST') {
+        throw error;
+      }
+      if (attempt >= retries) {
+        throw new Error(`Failed to acquire file lock after ${retries} retries: ${filePath}`);
+      }
+      sleepSync(delay);
+      delay = Math.min(maxDelayMs, delay * 2);
+      attempt += 1;
+    }
+  }
+}
+
+export function releaseFileLock(handle: FileLockHandle): void {
+  try {
+    fs.closeSync(handle.fd);
+  } catch {
+    // ignore
+  }
+  try {
+    if (fs.existsSync(handle.filePath)) {
+      fs.unlinkSync(handle.filePath);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function withFileLock<T>(filePath: string, fn: () => T, options: FileLockOptions = {}): T {
+  const handle = acquireFileLock(filePath, options);
+  try {
+    return fn();
+  } finally {
+    releaseFileLock(handle);
+  }
+}
+
 export function writeJsonAtomic(filePath: string, data: unknown): boolean {
   try {
     ensureDirectoryExists(path.dirname(filePath));
