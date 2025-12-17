@@ -155,7 +155,10 @@ export class WorkPlan {
         return errorResponse(`No agent found for agentId: ${agentId}`);
       }
 
-      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
+      const fileTicket = this.loadTicketFromFile(agentId, workplanId);
+      const workingTicket = fileTicket !== "noTicket" ? fileTicket : (agentState.workplans[workplanId] ?? "noTicket");
+
+      const ticketCheck = ensureTicketExists(workingTicket, true);
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -210,6 +213,19 @@ export class WorkPlan {
       });
 
       ticket.pullRequests[prIndex] = updatedPr;
+
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      }
+
+      this.agents = {
+        ...this.agents,
+        [agentId]: {
+          ...agentState,
+          workplans: { ...agentState.workplans, [workplanId]: ticket }
+        }
+      };
 
       const saveSuccess = this.saveState();
 
