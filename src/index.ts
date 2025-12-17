@@ -22,7 +22,8 @@ const dataFileName = 'workplan.json';
 
 const workPlanOptions: WorkPlanInitOptions = {
   dataDir,
-  dataFileName
+  dataFileName,
+  legacyWriterEnabled: false,
 };
 
 export const workPlan = new WorkPlan();

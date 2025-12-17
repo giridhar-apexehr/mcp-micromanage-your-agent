@@ -91,7 +91,7 @@ export class WorkPlan {
   private lastUpdated: string = new Date().toISOString();
   private readonly version: string = "3.0.0"; // データ形式のバージョン
   private legacyMigrationNeeded: boolean = false;
-  private legacyWriterEnabled: boolean = true;
+  private legacyWriterEnabled: boolean = false;
   
   constructor(options?: WorkPlanInitOptions) {
     // 初期化オプションの処理
@@ -376,7 +376,7 @@ export class WorkPlan {
       this.loadState();
       
       // ファイルが存在しない場合に常に新規作成
-      if (!fileStorage.fileExists()) {
+      if (this.legacyWriterEnabled && !fileStorage.fileExists()) {
         logger.info('Creating initial data file as it does not exist');
         this.saveState();
       }
@@ -559,7 +559,11 @@ export class WorkPlan {
       }
       
       if (success) {
-        logger.info(`WorkPlan state saved to file: ${fileStorage.getDataFilePath()}`);
+        if (this.legacyWriterEnabled) {
+          logger.info(`WorkPlan state saved to file: ${fileStorage.getDataFilePath()}`);
+        } else {
+          logger.info('WorkPlan state saved (legacy writer disabled)');
+        }
       } else {
         logger.error('Failed to save WorkPlan state to file');
       }
