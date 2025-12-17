@@ -89,67 +89,30 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
         return
       }
 
-      const workplanResponse = await fetch(
-        `/data/workplan.json?t=${timestamp}`,
-        fetchOptions,
-      )
-      if (!workplanResponse.ok) {
-        throw new Error(
-          `Failed to fetch workplan data. Status: ${workplanResponse.status}`,
-        )
+      const urlParams = new URLSearchParams(window.location.search)
+      const requestedAgentId = urlParams.get('agentId')
+      const requestedWorkplanId = urlParams.get('workplanId')
+
+      if (!requestedAgentId || !requestedWorkplanId) {
+        setWorkplan(null)
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
       }
 
-      const actualWorkPlan: unknown = await workplanResponse.json()
+      const selectedTicketResponse = await fetch(
+        `/data/agents/${requestedAgentId}/workplans/${requestedWorkplanId}.json?t=${timestamp}`,
+        fetchOptions,
+      )
 
-      const resolvedTicket = (() => {
-        const urlParams = new URLSearchParams(window.location.search)
-        const requestedAgentId = urlParams.get('agentId')
-        const requestedWorkplanId = urlParams.get('workplanId')
+      if (!selectedTicketResponse.ok) {
+        setWorkplan(null)
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
+      }
 
-        if (isRecord(actualWorkPlan)) {
-          const record = actualWorkPlan
-
-          if ('currentTicket' in record && record.currentTicket) {
-            return record.currentTicket
-          }
-
-          if ('workplans' in record && isRecord(record.workplans)) {
-            const workplans = record.workplans
-            if (requestedWorkplanId && requestedWorkplanId in workplans) {
-              return workplans[requestedWorkplanId]
-            }
-            return null
-          }
-
-          if ('agents' in record && isRecord(record.agents)) {
-            const agents = record.agents
-            const resolvedAgent = (() => {
-              if (requestedAgentId && requestedAgentId in agents) {
-                return agents[requestedAgentId]
-              }
-              return null
-            })()
-
-            if (!isRecord(resolvedAgent)) {
-              return null
-            }
-
-            if (
-              'workplans' in resolvedAgent &&
-              isRecord(resolvedAgent.workplans)
-            ) {
-              const workplans = resolvedAgent.workplans
-              if (requestedWorkplanId && requestedWorkplanId in workplans) {
-                return workplans[requestedWorkplanId]
-              }
-            }
-
-            return null
-          }
-        }
-
-        return null
-      })()
+      const resolvedTicket: unknown = await selectedTicketResponse.json()
 
       // If nothing selected or selection is ambiguous, we show the dashboard instead of erroring.
       if (!resolvedTicket || resolvedTicket === 'noTicket') {
