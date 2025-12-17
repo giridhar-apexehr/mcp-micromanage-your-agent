@@ -135,6 +135,36 @@ export class WorkPlan {
     }
   }
 
+  private migrateWorkplanFilesFromLegacyIfNeeded(): void {
+    if (!this.legacyMigrationNeeded) {
+      return;
+    }
+
+    let writtenCount = 0;
+    let skippedCount = 0;
+
+    for (const [agentId, agentState] of Object.entries(this.agents)) {
+      for (const [workplanId, ticket] of Object.entries(agentState.workplans ?? {})) {
+        if (ticket === 'noTicket') {
+          continue;
+        }
+
+        const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+        if (fs.existsSync(filePath)) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const saved = this.saveTicketToFile(agentId, workplanId, ticket);
+        if (saved) {
+          writtenCount += 1;
+        }
+      }
+    }
+
+    logger.info(`Migrated ${writtenCount} workplan file(s) (${skippedCount} skipped)`);
+  }
+
   public insertCommit(input: InsertCommitInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       if (!this.initialized) {
@@ -427,6 +457,8 @@ export class WorkPlan {
       }
 
       logger.info(`WorkPlan state loaded from file: ${fileStorage.getDataFilePath()}`);
+
+      this.migrateWorkplanFilesFromLegacyIfNeeded();
 
       const agentCount = Object.keys(this.agents).length;
       if (!agentCount) {
