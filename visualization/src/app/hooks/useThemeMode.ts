@@ -27,8 +27,8 @@ export const useThemeMode = (): UseThemeModeResult => {
   /**
    * Apply the theme-related classes on the root document element.
    *
-   * HeroUI/Tailwind use the conventional `.dark` class for dark-mode variants.
-   * This project also relies on `.dark-mode` for morphic CSS variables.
+   * This project uses `.dark-mode` for both HeroUI/Tailwind dark variants (via Tailwind config)
+   * and morphic CSS variables. Only `.dark-mode` is applied to avoid duplication.
    *
    * @param isDarkModeNext Whether dark mode should be active.
    */
@@ -37,12 +37,10 @@ export const useThemeMode = (): UseThemeModeResult => {
 
     if (isDarkModeNext) {
       root.classList.add('dark-mode')
-      root.classList.add('dark')
       return
     }
 
     root.classList.remove('dark-mode')
-    root.classList.remove('dark')
   }, [])
 
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
