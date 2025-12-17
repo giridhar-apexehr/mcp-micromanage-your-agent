@@ -42,6 +42,14 @@ export function getDataFilePath(): string {
   return path.resolve(dataDir, dataFileName);
 }
 
+export function getAgentsIndexPath(): string {
+  return path.resolve(dataDir, 'agents.json');
+}
+
+export function getWorkplanPath(agentId: string, workplanId: string): string {
+  return path.resolve(dataDir, 'agents', agentId, 'workplans', `${workplanId}.json`);
+}
+
 /**
  * ディレクトリが存在することを確認し、存在しない場合は作成
  * @param dirPath 確認するディレクトリパス
