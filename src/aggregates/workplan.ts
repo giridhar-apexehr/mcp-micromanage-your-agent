@@ -415,6 +415,27 @@ export class WorkPlan {
         `Migration check: agentsIndexExists=${agentsIndexExists}, legacyWorkplanExists=${legacyWorkplanExists}, legacyMigrationNeeded=${this.legacyMigrationNeeded}`,
       );
 
+      if (agentsIndexExists) {
+        const index = fileStorage.loadAgentsIndex({ agents: {} });
+
+        this.agents = Object.fromEntries(
+          Object.entries(index.agents ?? {}).map(([agentId, agentEntry]) => {
+            const workplans = Object.fromEntries(
+              Object.keys(agentEntry.workplans ?? {}).map((workplanId) => [
+                workplanId,
+                this.loadTicketFromFile(agentId, workplanId),
+              ]),
+            ) as Record<string, Ticket | "noTicket">;
+
+            return [agentId, { workplans } satisfies AgentWorkPlanState];
+          }),
+        );
+
+        this.lastUpdated = index.lastUpdated || new Date().toISOString();
+        logger.info(`WorkPlan state loaded from agents index: ${fileStorage.getAgentsIndexPath()}`);
+        return;
+      }
+
       const savedStateRaw = fileStorage.loadFromFile<unknown>(defaultState);
 
       const savedState = savedStateRaw as Partial<WorkPlanState> & {
