@@ -630,7 +630,10 @@ export class WorkPlan {
         return errorResponse(`No agent found for agentId: ${agentId}`);
       }
 
-      const ticketCheck = ensureTicketExists(agentState.workplans[workplanId] ?? "noTicket", true);
+      const fileTicket = this.loadTicketFromFile(agentId, workplanId);
+      const workingTicket = fileTicket !== "noTicket" ? fileTicket : (agentState.workplans[workplanId] ?? "noTicket");
+
+      const ticketCheck = ensureTicketExists(workingTicket, true);
       if (!ticketCheck.result) {
         logger.warn('No implementation plan found');
         return ticketCheck.response;
@@ -656,6 +659,19 @@ export class WorkPlan {
           ticket.pullRequests[prIndex].developerNote = input.developerNote;
           changes.push(`PR developer note updated`);
           logger.info(`Updated PR developer note: ${input.developerNote}`);
+
+          const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+          if (!perWorkplanSaved) {
+            logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+          }
+
+          this.agents = {
+            ...this.agents,
+            [agentId]: {
+              ...agentState,
+              workplans: { ...agentState.workplans, [workplanId]: ticket }
+            }
+          };
 
           // 変更をファイルに保存
           const saveSuccess = this.saveState();
@@ -742,9 +758,22 @@ export class WorkPlan {
       if (input.developerNote !== undefined) {
         ticket.pullRequests[prIndex].commits[commitIndex].developerNote = input.developerNote;
         changes.push(`developer note updated`);
-        logger.info(`Updated commit developer note: ${input.developerNote}`);
+        logger.info(`Updated developer note: ${input.developerNote}`);
       }
-      
+
+      const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, ticket);
+      if (!perWorkplanSaved) {
+        logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      }
+
+      this.agents = {
+        ...this.agents,
+        [agentId]: {
+          ...agentState,
+          workplans: { ...agentState.workplans, [workplanId]: ticket }
+        }
+      };
+
       // 変更をファイルに保存
       const saveSuccess = this.saveState();
       
