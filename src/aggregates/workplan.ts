@@ -440,6 +440,30 @@ export class WorkPlan {
       const perWorkplanSaved = this.saveTicketToFile(agentId, workplanId, newTicket);
       if (!perWorkplanSaved) {
         logger.warn(`Failed to persist per-workplan ticket file for agentId=${agentId}, workplanId=${workplanId}`);
+      } else {
+        const prCount = newTicket.pullRequests.length;
+        const commitCount = newTicket.pullRequests.reduce((sum: number, pr: PullRequest) => sum + pr.commits.length, 0);
+
+        const entryLastUpdated = new Date().toISOString();
+        const indexUpdated = fileStorage.updateAgentsIndex((state) => {
+          const next = state;
+          if (!next.agents[agentId]) {
+            next.agents[agentId] = { workplans: {} };
+          }
+          if (!next.agents[agentId].workplans) {
+            next.agents[agentId].workplans = {};
+          }
+          next.agents[agentId].workplans[workplanId] = {
+            goal: newTicket.goal,
+            prCount,
+            commitCount,
+            lastUpdated: entryLastUpdated,
+          };
+        });
+
+        if (!indexUpdated) {
+          logger.warn(`Failed to update agents index for agentId=${agentId}, workplanId=${workplanId}`);
+        }
       }
 
       const agentState: AgentWorkPlanState = this.agents[agentId] ?? { workplans: {} };
