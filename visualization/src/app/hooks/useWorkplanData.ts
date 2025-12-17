@@ -32,6 +32,50 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+const resolveTicketFromLegacyPayload = (
+  actualWorkPlan: unknown,
+  requestedAgentId: string,
+  requestedWorkplanId: string,
+): unknown | null => {
+  if (!isRecord(actualWorkPlan)) {
+    return null
+  }
+
+  const record = actualWorkPlan
+
+  if ('currentTicket' in record && record.currentTicket) {
+    return record.currentTicket
+  }
+
+  if ('workplans' in record && isRecord(record.workplans)) {
+    const workplans = record.workplans
+    if (requestedWorkplanId in workplans) {
+      return workplans[requestedWorkplanId]
+    }
+    return null
+  }
+
+  if ('agents' in record && isRecord(record.agents)) {
+    const agents = record.agents
+    const resolvedAgent = requestedAgentId in agents ? agents[requestedAgentId] : null
+
+    if (!isRecord(resolvedAgent)) {
+      return null
+    }
+
+    if ('workplans' in resolvedAgent && isRecord(resolvedAgent.workplans)) {
+      const workplans = resolvedAgent.workplans
+      if (requestedWorkplanId in workplans) {
+        return workplans[requestedWorkplanId]
+      }
+    }
+
+    return null
+  }
+
+  return null
+}
+
 /**
  * Loads and normalizes workplan data and selection state.
  */
@@ -62,19 +106,31 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
       }
 
       const timestamp = new Date().getTime()
+
+      let legacyWorkPlan: unknown | null = null
+      let catalogPayload: unknown | null = null
+
       const agentsIndexResponse = await fetch(
         `/data/agents.json?t=${timestamp}`,
         fetchOptions,
       )
-      if (!agentsIndexResponse.ok) {
-        throw new Error(
-          `Failed to fetch agents index. Status: ${agentsIndexResponse.status}`,
+      if (agentsIndexResponse.ok) {
+        catalogPayload = (await agentsIndexResponse.json()) as unknown
+      } else {
+        const legacyResponse = await fetch(
+          `/data/workplan.json?t=${timestamp}`,
+          fetchOptions,
         )
+        if (!legacyResponse.ok) {
+          throw new Error(
+            `Failed to fetch workplan data. Status: ${legacyResponse.status}`,
+          )
+        }
+        legacyWorkPlan = (await legacyResponse.json()) as unknown
+        catalogPayload = legacyWorkPlan
       }
 
-      const agentsIndex: unknown = await agentsIndexResponse.json()
-
-      const catalog = buildWorkplanCatalog(agentsIndex)
+      const catalog = buildWorkplanCatalog(catalogPayload)
       setWorkplanCatalog(catalog)
 
       const selectionState = window.history.state as {
@@ -106,7 +162,75 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
       )
 
       if (!selectedTicketResponse.ok) {
-        setWorkplan(null)
+        if (!legacyWorkPlan) {
+          const legacyResponse = await fetch(
+            `/data/workplan.json?t=${timestamp}`,
+            fetchOptions,
+          )
+          if (legacyResponse.ok) {
+            legacyWorkPlan = (await legacyResponse.json()) as unknown
+          }
+        }
+
+        const resolvedTicket = legacyWorkPlan
+          ? resolveTicketFromLegacyPayload(
+              legacyWorkPlan,
+              requestedAgentId,
+              requestedWorkplanId,
+            )
+          : null
+
+        if (!resolvedTicket) {
+          setWorkplan(null)
+          setLastLoadedTime(new Date())
+          setLoadError(null)
+          return
+        }
+
+        const resolvedTicketAsUnknown: unknown = resolvedTicket
+        if (
+          !isRecord(resolvedTicketAsUnknown) ||
+          typeof resolvedTicketAsUnknown.goal !== 'string' ||
+          !Array.isArray(resolvedTicketAsUnknown.pullRequests)
+        ) {
+          setWorkplan(null)
+          setLastLoadedTime(new Date())
+          setLoadError(null)
+          return
+        }
+
+        const convertedWorkPlan: WorkPlan = {
+          goal: resolvedTicketAsUnknown.goal,
+          prPlans: resolvedTicketAsUnknown.pullRequests.map(
+            (pr: {
+              goal: string
+              status: string
+              developerNote?: string
+              commits: Array<{
+                goal: string
+                status: string
+                developerNote?: string
+              }>
+            }) => ({
+              goal: pr.goal,
+              status: pr.status as CommitStatus,
+              developerNote: pr.developerNote,
+              commitPlans: pr.commits.map(
+                (commit: {
+                  goal: string
+                  status: string
+                  developerNote?: string
+                }) => ({
+                  goal: commit.goal,
+                  status: commit.status as CommitStatus,
+                  developerNote: commit.developerNote,
+                }),
+              ),
+            }),
+          ),
+        }
+
+        setWorkplan(convertedWorkPlan)
         setLastLoadedTime(new Date())
         setLoadError(null)
         return
