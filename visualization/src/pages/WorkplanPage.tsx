@@ -15,7 +15,6 @@ import type { FilterOptions } from '../components/panels/FilterPanel.types'
 import type { WorkPlan } from '../types'
 
 type WorkplanPageProps = {
-  isDarkMode: boolean
   header: ReactNode
   workplan: WorkPlan
   filterOptions: FilterOptions
@@ -26,14 +25,13 @@ type WorkplanPageProps = {
  * Workplan page scaffold.
  */
 export function WorkplanPage({
-  isDarkMode,
   header,
   workplan,
   filterOptions,
   children,
 }: WorkplanPageProps) {
   return (
-    <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+    <div className="app">
       <ReactFlowProvider>
         {header}
 

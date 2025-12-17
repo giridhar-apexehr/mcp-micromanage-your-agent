@@ -106,7 +106,6 @@ function App() {
   if (!workplan) {
     return (
       <DashboardPage
-        isDarkMode={isDarkMode}
         themeMode={themeMode}
         toggleThemeMode={toggleThemeMode}
         workplanCatalog={workplanCatalog}
@@ -118,7 +117,6 @@ function App() {
 
   return (
     <WorkplanPage
-      isDarkMode={isDarkMode}
       workplan={workplan}
       filterOptions={filterOptions}
       header={

@@ -14,13 +14,13 @@ type ErrorOverlayProps = {
  */
 export function ErrorOverlay({ loadError, onReload }: ErrorOverlayProps) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+    <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
       <div className="text-center p-8 max-w-md">
         <div className="animate-pulse text-5xl mb-6">⚠️</div>
-        <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
+        <h2 className="text-xl font-bold text-red-600 mb-4">
           An error occurred
         </h2>
-        <p className="text-gray-700 dark:text-gray-300 mb-6">
+        <p className="text-gray-700 mb-6">
           {loadError || 'Workplan data not found'}
         </p>
         <button
