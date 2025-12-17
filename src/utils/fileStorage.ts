@@ -72,6 +72,32 @@ export function saveToFile<T>(data: T): boolean {
   }
 }
 
+export function writeJsonAtomic(filePath: string, data: unknown): boolean {
+  try {
+    ensureDirectoryExists(path.dirname(filePath));
+    const dir = path.dirname(filePath);
+    const base = path.basename(filePath);
+    const tmpPath = path.join(dir, `.${base}.${process.pid}.${Date.now()}.tmp`);
+
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+    fs.renameSync(tmpPath, filePath);
+    return true;
+  } catch (error) {
+    logger.logError(`Failed to atomically write JSON to file: ${filePath}`, error);
+    try {
+      const dir = path.dirname(filePath);
+      const base = path.basename(filePath);
+      const candidate = path.join(dir, `.${base}.${process.pid}.${Date.now()}.tmp`);
+      if (fs.existsSync(candidate)) {
+        fs.unlinkSync(candidate);
+      }
+    } catch {
+      // ignore cleanup failures
+    }
+    return false;
+  }
+}
+
 /**
  * ファイルからJSONデータを読み込み
  * @param defaultData ファイルが存在しない場合のデフォルトデータ
