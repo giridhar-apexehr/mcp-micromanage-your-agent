@@ -39,6 +39,7 @@ export interface InsertCommitInput {
 export interface WorkPlanInitOptions {
   dataDir?: string;         // データディレクトリパス
   dataFileName?: string;    // データファイル名
+  legacyWriterEnabled?: boolean;
 }
 
 // helpers
@@ -90,6 +91,7 @@ export class WorkPlan {
   private lastUpdated: string = new Date().toISOString();
   private readonly version: string = "3.0.0"; // データ形式のバージョン
   private legacyMigrationNeeded: boolean = false;
+  private legacyWriterEnabled: boolean = true;
   
   constructor(options?: WorkPlanInitOptions) {
     // 初期化オプションの処理
@@ -365,6 +367,10 @@ export class WorkPlan {
       if (options.dataFileName) {
         fileStorage.setDataFileName(options.dataFileName);
       }
+
+      if (typeof options.legacyWriterEnabled === 'boolean') {
+        this.legacyWriterEnabled = options.legacyWriterEnabled;
+      }
       
       // 常に自動的にデータをロードする
       this.loadState();
@@ -523,8 +529,13 @@ export class WorkPlan {
         lastUpdated: this.lastUpdated,
         version: this.version
       };
-      
-      const success = fileStorage.saveToFile<WorkPlanState>(state);
+
+      let success = true;
+      if (this.legacyWriterEnabled) {
+        success = fileStorage.saveToFile<WorkPlanState>(state);
+      } else {
+        logger.info('Legacy writer disabled; skipping monolithic state write');
+      }
       
       if (success) {
         logger.info(`WorkPlan state saved to file: ${fileStorage.getDataFilePath()}`);
