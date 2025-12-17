@@ -89,6 +89,25 @@ export function loadAgentsIndex(defaultData: AgentsIndexState = { agents: {} }):
   }
 }
 
+export function updateAgentsIndex(
+  mutator: (state: AgentsIndexState) => AgentsIndexState | void,
+  defaultData: AgentsIndexState = { agents: {} },
+): boolean {
+  const indexPath = getAgentsIndexPath();
+  const lockPath = `${indexPath}.lock`;
+
+  return withFileLock(lockPath, () => {
+    const state = loadAgentsIndex(defaultData);
+    const mutated = mutator(state);
+    const nextState = mutated ?? state;
+
+    return writeJsonAtomic(indexPath, {
+      ...nextState,
+      lastUpdated: new Date().toISOString(),
+    });
+  });
+}
+
 /**
  * ディレクトリが存在することを確認し、存在しない場合は作成
  * @param dirPath 確認するディレクトリパス
