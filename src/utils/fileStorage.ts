@@ -50,6 +50,45 @@ export function getWorkplanPath(agentId: string, workplanId: string): string {
   return path.resolve(dataDir, 'agents', agentId, 'workplans', `${workplanId}.json`);
 }
 
+export type AgentsIndexWorkplanEntry = {
+  goal?: string;
+  lastUpdated?: string;
+  prCount?: number;
+  commitCount?: number;
+};
+
+export type AgentsIndexAgentEntry = {
+  workplans: Record<string, AgentsIndexWorkplanEntry>;
+};
+
+export type AgentsIndexState = {
+  version?: string;
+  lastUpdated?: string;
+  agents: Record<string, AgentsIndexAgentEntry>;
+};
+
+export function loadAgentsIndex(defaultData: AgentsIndexState = { agents: {} }): AgentsIndexState {
+  try {
+    const filePath = getAgentsIndexPath();
+
+    if (!fs.existsSync(filePath)) {
+      return defaultData;
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const parsedData = JSON.parse(fileContent) as AgentsIndexState;
+
+    if (!parsedData || typeof parsedData !== 'object' || !('agents' in parsedData)) {
+      return defaultData;
+    }
+
+    return parsedData;
+  } catch (error) {
+    logger.logError(`Failed to load agents index`, error);
+    return defaultData;
+  }
+}
+
 /**
  * ディレクトリが存在することを確認し、存在しない場合は作成
  * @param dirPath 確認するディレクトリパス
