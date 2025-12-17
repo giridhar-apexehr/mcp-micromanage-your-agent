@@ -129,7 +129,7 @@ export function saveToFile<T>(data: T): boolean {
     ensureDirectoryExists(dataDir);
     const filePath = getDataFilePath();
     logger.debug(`Saving data to file: ${filePath}`);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    writeJsonAtomic(filePath, data);
     logger.info(`Data successfully saved to: ${filePath}`);
     return true;
   } catch (error) {
