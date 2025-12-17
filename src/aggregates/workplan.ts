@@ -1,4 +1,5 @@
 import { progressInstructionGuide } from '../prompts.js';
+import fs from 'fs';
 import { Ticket, planTicket, ensureTicketExists } from '../values/ticket.js';
 import { PullRequest, updatePRStatusBasedOnCommits, generatePRSummaries } from '../values/pullRequest.js';
 import { Status, validateStatusTransition } from '../values/status.js';
@@ -95,6 +96,42 @@ export class WorkPlan {
       this.initialize(options);
     }
 
+  }
+
+  private loadTicketFromFile(agentId: string, workplanId: string): Ticket | "noTicket" {
+    try {
+      const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+      if (!fs.existsSync(filePath)) {
+        return "noTicket";
+      }
+
+      const raw = fs.readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(raw) as unknown;
+
+      if (!parsed || typeof parsed !== 'object') {
+        return "noTicket";
+      }
+
+      const ticket = parsed as Partial<Ticket>;
+      if (typeof ticket.goal !== 'string' || !Array.isArray((ticket as { pullRequests?: unknown }).pullRequests)) {
+        return "noTicket";
+      }
+
+      return ticket as Ticket;
+    } catch (error) {
+      logger.logError('Failed to load ticket from per-workplan file', error);
+      return "noTicket";
+    }
+  }
+
+  private saveTicketToFile(agentId: string, workplanId: string, ticket: Ticket | "noTicket"): boolean {
+    try {
+      const filePath = fileStorage.getWorkplanPath(agentId, workplanId);
+      return fileStorage.writeJsonAtomic(filePath, ticket);
+    } catch (error) {
+      logger.logError('Failed to save ticket to per-workplan file', error);
+      return false;
+    }
   }
 
   public insertCommit(input: InsertCommitInput, agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
