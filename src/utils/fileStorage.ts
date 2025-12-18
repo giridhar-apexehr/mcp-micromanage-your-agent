@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import logger from './logger.js';
+import type { Status } from '../values/status.js';
 
 // ファイルパスを解決するための定数
 const __filename = fileURLToPath(import.meta.url);
@@ -55,6 +56,12 @@ export type AgentsIndexWorkplanEntry = {
   lastUpdated?: string;
   prCount?: number;
   commitCount?: number;
+  latestWorkedOn?: {
+    at: string;
+    prIndex: number;
+    commitIndex: number;
+    status: Status;
+  };
 };
 
 export type AgentsIndexAgentEntry = {

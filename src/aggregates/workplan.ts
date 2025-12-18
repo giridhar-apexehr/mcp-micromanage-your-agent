@@ -197,6 +197,7 @@ export class WorkPlan {
             prCount,
             commitCount,
             lastUpdated: entryLastUpdated,
+            ...(ticket.latestWorkedOn ? { latestWorkedOn: ticket.latestWorkedOn } : {}),
           };
         }
       }
@@ -303,7 +304,10 @@ export class WorkPlan {
           if (!next.agents[agentId].workplans) {
             next.agents[agentId].workplans = {};
           }
+
+          const existingEntry = next.agents[agentId].workplans[workplanId] ?? {};
           next.agents[agentId].workplans[workplanId] = {
+            ...existingEntry,
             goal: ticket.goal,
             prCount,
             commitCount,
@@ -610,7 +614,10 @@ export class WorkPlan {
           if (!next.agents[agentId].workplans) {
             next.agents[agentId].workplans = {};
           }
+
+          const existingEntry = next.agents[agentId].workplans[workplanId] ?? {};
           next.agents[agentId].workplans[workplanId] = {
+            ...existingEntry,
             goal: newTicket.goal,
             prCount,
             commitCount,
@@ -764,6 +771,7 @@ export class WorkPlan {
             agentId,
             workplanId,
             goal: ticket.goal,
+            latestWorkedOn: ticket.latestWorkedOn ?? null,
             progress: {
               prs: `${completedPRs}/${totalPRs}`,
               commits: `${completedCommits}/${totalCommits}`,
@@ -917,6 +925,8 @@ export class WorkPlan {
         logger.error(errorMessage);
         return errorResponse(errorMessage);
       }
+
+      const shouldUpdateLatestWorkedOn = currentStatus !== input.status && (input.status === 'in_progress' || input.status === 'user_review' || input.status === 'completed');
       
       // If setting a task to "in_progress", reset any other in-progress tasks to "not_started"
       if (input.status === 'in_progress') {
@@ -945,6 +955,15 @@ export class WorkPlan {
       
       ticket.pullRequests[prIndex].commits[commitIndex].status = input.status;
       changes.push(`status updated to "${input.status}"`);
+
+      if (shouldUpdateLatestWorkedOn) {
+        ticket.latestWorkedOn = {
+          at: new Date().toISOString(),
+          prIndex,
+          commitIndex,
+          status: input.status,
+        };
+      }
       
       // Update PR status based on commits
       const updatedPr = updatePRStatusBasedOnCommits(ticket.pullRequests[prIndex]);
@@ -980,11 +999,15 @@ export class WorkPlan {
           if (!next.agents[agentId].workplans) {
             next.agents[agentId].workplans = {};
           }
+
+          const existingEntry = next.agents[agentId].workplans[workplanId] ?? {};
           next.agents[agentId].workplans[workplanId] = {
+            ...existingEntry,
             goal: ticket.goal,
             prCount,
             commitCount,
             lastUpdated: entryLastUpdated,
+            ...(shouldUpdateLatestWorkedOn ? { latestWorkedOn: ticket.latestWorkedOn } : {}),
           };
         });
 
