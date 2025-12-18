@@ -7,12 +7,16 @@ import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/proto
 export const TRACK_TOOL: Tool<{
   agentId: z.ZodString;
   workplanId: z.ZodString;
+  prIndex: z.ZodOptional<z.ZodNumber>;
 }> = {
   name: "track",
   description: `
     This tool helps you monitor the current state of the implementation plan, view progress, and identify possible next steps.
     There is always exactly one task in either the in_progress or user_review state.
     **IMPORTANT**: There is always exactly one task in either the in_progress or user_review or needsRefinment state.
+
+    Optional:
+    - Provide prIndex (0-based) to return only the requested PR and its commits in pullRequests and detailedPullRequests.
     
     **MANDATORY STATUS TRANSITION RULES:**
     needsRefinment → in_progress:
@@ -27,7 +31,8 @@ export const TRACK_TOOL: Tool<{
   `,
   schema: {
     agentId: z.string().min(1, 'agentId must be a non-empty string').describe('Required identifier for the calling agent.'),
-    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to track. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.')
+    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to track. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.'),
+    prIndex: z.number().int().min(0, 'PR index must be a non-negative integer').optional().describe('Optional: Index of the PR to include in the response. Zero-based index in the PR array.')
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {
@@ -43,7 +48,11 @@ export const TRACK_TOOL: Tool<{
         return createErrorResponse('WorkPlan is not ready. Server initialization incomplete.');
       }
       
-      const result = workPlan.trackProgress(String(params.agentId), String(params.workplanId));
+      const result = workPlan.trackProgress(
+        String(params.agentId),
+        String(params.workplanId),
+        params.prIndex
+      );
       
       return {
         content: result.content.map(item => ({

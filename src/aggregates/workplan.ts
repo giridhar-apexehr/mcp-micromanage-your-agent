@@ -666,7 +666,7 @@ export class WorkPlan {
     }
   }
 
-  public trackProgress(agentId: string, workplanId: string): { content: Array<{ type: string; text: string }>; isError?: boolean } {
+  public trackProgress(agentId: string, workplanId: string, prIndex?: number): { content: Array<{ type: string; text: string }>; isError?: boolean } {
     try {
       // 初期化チェック
       if (!this.initialized) {
@@ -695,6 +695,25 @@ export class WorkPlan {
       }
       
       const ticket = ticketCheck.ticket;
+
+      if (prIndex !== undefined) {
+        const isValidPrIndex = Number.isInteger(prIndex) && prIndex >= 0 && prIndex < ticket.pullRequests.length;
+        if (!isValidPrIndex) {
+          const availablePrIndices = ticket.pullRequests.map((_, index) => index);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                message: `Invalid prIndex: must be between 0 and ${Math.max(ticket.pullRequests.length - 1, 0)}`,
+                agentId,
+                workplanId,
+                requestedPrIndex: prIndex,
+                availablePrIndices,
+              }, null, 2)
+            }]
+          };
+        }
+      }
       
       // Calculate progress statistics
       const completedPRs = ticket.pullRequests.filter((pr: PullRequest) => pr.status === "completed").length;
@@ -729,6 +748,9 @@ export class WorkPlan {
           commits: detailedCommits
         };
       });
+
+      const filteredPrSummaries = prIndex !== undefined ? prSummaries.filter(pr => pr.prIndex === prIndex) : prSummaries;
+      const filteredDetailedPRs = prIndex !== undefined ? detailedPRs.filter(pr => pr.prIndex === prIndex) : detailedPRs;
       
       logger.info(
         `Progress: ${completedPRs}/${totalPRs} PRs, ${completedCommits}/${totalCommits} commits, ` +
@@ -747,8 +769,8 @@ export class WorkPlan {
               commits: `${completedCommits}/${totalCommits}`,
               percentComplete: totalCommits ? Math.round((completedCommits / totalCommits) * 100) : 0
             },
-            pullRequests: prSummaries,
-            detailedPullRequests: detailedPRs,  // Add detailed information including developer notes
+            pullRequests: filteredPrSummaries,
+            detailedPullRequests: filteredDetailedPRs,  // Add detailed information including developer notes
             agentInstruction: progressInstructionGuide.text,
             persistenceInfo: {
               dataFilePath: fileStorage.getDataFilePath(),
