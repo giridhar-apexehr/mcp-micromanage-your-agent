@@ -437,17 +437,13 @@
   color: white;
 }
 
-.dark-mode button:hover {
-  background-color: var(--button-secondary-hover);
-}
-
-.dark-mode input,
+/* .dark-mode input,
 .dark-mode select,
 .dark-mode textarea {
   background-color: var(--input-bg);
   color: var(--text-color);
   border-color: var(--input-border);
-}
+} */
 
 .dark-mode input::placeholder,
 .dark-mode textarea::placeholder {

@@ -146,33 +146,6 @@ export const FilterPanel = ({
   }, [isOpen, onClose])
 
   /**
-   * Render status dropdown items with icons
-   */
-  const renderStatusItems = () => {
-    return statusValues.map((status: CommitStatus | 'all') => {
-      const Icon = STATUS_ICONS[status]
-      const isSelected = status === localOptions.statusFilter
-
-      return (
-        <DropdownItem
-          key={status}
-          startContent={
-            <Icon
-              className="text-default-500"
-              size={16}
-              strokeWidth={2}
-            />
-          }
-          onPress={() => handleChange('statusFilter', status)}
-          isSelected={isSelected}
-        >
-          {STATUS_LABELS[status]}
-        </DropdownItem>
-      )
-    })
-  }
-
-  /**
    * Render active filter chips
    */
   const renderActiveFilters = () => {
@@ -184,80 +157,79 @@ export const FilterPanel = ({
     if (!hasActiveFilters) return null
 
     return (
-      <div className="space-y-2">
-        <div className="text-sm font-medium">Active filters:</div>
-        <div className="flex flex-wrap gap-2">
-          {localOptions.statusFilter !== 'all' && (
-            <Chip
-              color="primary"
-              variant="flat"
-              onClose={() => handleChange('statusFilter', 'all')}
-              endContent={
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={() => handleChange('statusFilter', 'all')}
-                  className="ml-1"
-                >
-                  <X size={12} strokeWidth={2} />
-                </Button>
-              }
-              startContent={
-                (() => {
-                  const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus]
-                  return <Icon size={14} strokeWidth={2} />
-                })()
-              }
-            >
+      <div className="filter-panel__badges">
+        <div className="filter-panel__badges-label">Active filters:</div>
+
+        {localOptions.statusFilter !== 'all' && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--blue"
+            onClose={() => handleChange('statusFilter', 'all')}
+            startContent={
+              (() => {
+                const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus]
+                return <Icon className="morphic-icon" size={14} strokeWidth={2} />
+              })()
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('statusFilter', 'all')}
+                aria-label="Clear status filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">
               {STATUS_LABELS[localOptions.statusFilter as CommitStatus]}
-            </Chip>
-          )}
+            </span>
+          </Chip>
+        )}
 
-          {localOptions.searchQuery.trim() && (
-            <Chip
-              color="success"
-              variant="flat"
-              onClose={() => handleChange('searchQuery', '')}
-              endContent={
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={() => handleChange('searchQuery', '')}
-                  className="ml-1"
-                >
-                  <X size={12} strokeWidth={2} />
-                </Button>
-              }
-              startContent={<Search size={14} strokeWidth={2} />}
-            >
-              {localOptions.searchQuery}
-            </Chip>
-          )}
+        {localOptions.searchQuery.trim() && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--green"
+            onClose={() => handleChange('searchQuery', '')}
+            startContent={
+              <Search className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('searchQuery', '')}
+                aria-label="Clear search filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">{localOptions.searchQuery}</span>
+          </Chip>
+        )}
 
-          {localOptions.onlyShowActive && (
-            <Chip
-              color="warning"
-              variant="flat"
-              onClose={() => handleChange('onlyShowActive', false)}
-              endContent={
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onClick={() => handleChange('onlyShowActive', false)}
-                  className="ml-1"
-                >
-                  <X size={12} strokeWidth={2} />
-                </Button>
-              }
-              startContent={<RefreshCw size={14} strokeWidth={2} />}
-            >
-              Active Only
-            </Chip>
-          )}
-        </div>
+        {localOptions.onlyShowActive && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--yellow"
+            onClose={() => handleChange('onlyShowActive', false)}
+            startContent={
+              <RefreshCw className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('onlyShowActive', false)}
+                aria-label="Clear active-only filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">Active Only</span>
+          </Chip>
+        )}
       </div>
     )
   }
@@ -265,47 +237,50 @@ export const FilterPanel = ({
   return (
     <Card
       ref={panelRef}
-      className="w-80 filter-panel"
+      className="auto-refresh-panel filter-panel"
       role="dialog"
       aria-label="Filter settings"
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <SlidersHorizontal
-              className="text-default-500"
-              size={18}
-              strokeWidth={2}
-            />
-            <div className="text-lg font-semibold">Filter Settings</div>
-          </div>
-          <Button
-            isIconOnly
-            size="sm"
-            variant="light"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X size={18} strokeWidth={2} />
-          </Button>
+      <CardHeader className="auto-refresh-panel__header">
+        <div className="auto-refresh-panel__title filter-panel__title">
+          <span className="filter-panel__title-icon" aria-hidden="true">
+            <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
+          </span>
+          Filter Settings
         </div>
+        <button
+          onClick={onClose}
+          className="filter-panel__close"
+          aria-label="Close"
+          type="button"
+        >
+          <X className="morphic-icon" size={18} strokeWidth={2} />
+        </button>
       </CardHeader>
-      <CardBody className="pt-0">
-        <div className="space-y-4">
-          {/* Status filter */}
-          <div>
-            <div className="text-sm font-medium mb-2">Status</div>
+      <CardBody className="p-0">
+        {/* Status filter */}
+        <div className="auto-refresh-panel__section">
+          <div className="filter-panel__field">
+            <label className="auto-refresh-panel__label">Status</label>
             <Dropdown>
               <DropdownTrigger>
                 <Button
-                  variant="bordered"
-                  className="w-full justify-start"
-                  endContent={<ChevronDown className="text-default-400" size={16} />}
+                  type="button"
+                  className="auto-refresh-panel__input filter-panel__control"
+                  aria-label="Status"
                   startContent={
-                    (() => {
-                      const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all']
-                      return <Icon className="text-default-500" size={16} strokeWidth={2} />
-                    })()
+                    <span className="filter-panel__field-icon morphic-input-icon" aria-hidden="true">
+                      {(() => {
+                        const Icon =
+                          STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all']
+                        return <Icon className="morphic-icon" size={16} strokeWidth={2} />
+                      })()}
+                    </span>
+                  }
+                  endContent={
+                    <span className="filter-panel__field-suffix morphic-input-suffix" aria-hidden="true">
+                      <ChevronDown className="filter-panel__chevron" size={18} strokeWidth={2} />
+                    </span>
                   }
                 >
                   {STATUS_LABELS[localOptions.statusFilter as CommitStatus | 'all']}
@@ -313,45 +288,79 @@ export const FilterPanel = ({
               </DropdownTrigger>
               <DropdownMenu
                 aria-label="Status"
+                className="filter-panel__menu filter-panel__menu--dropdown"
                 selectedKeys={new Set([localOptions.statusFilter])}
                 onSelectionChange={(keys) => {
                   const selected = Array.from(keys)[0] as CommitStatus | 'all'
                   handleChange('statusFilter', selected)
                 }}
               >
-                {renderStatusItems()}
+                {statusValues.map((status) => {
+                  const Icon = STATUS_ICONS[status]
+                  const isSelected = status === localOptions.statusFilter
+
+                  return (
+                    <DropdownItem
+                      key={status}
+                      className={`filter-panel__menu-item ${isSelected ? 'is-selected' : ''}`}
+                      startContent={
+                        <span className="filter-panel__menu-icon" aria-hidden="true">
+                          <Icon className="morphic-icon" size={16} strokeWidth={2} />
+                        </span>
+                      }
+                    >
+                      <span className="filter-panel__menu-label">{STATUS_LABELS[status]}</span>
+                    </DropdownItem>
+                  )
+                })}
               </DropdownMenu>
             </Dropdown>
           </div>
+        </div>
 
-          {/* Search filter */}
-          <div>
+        {/* Search filter */}
+        <div className="auto-refresh-panel__section">
+          <div className="filter-panel__field">
+            <label className="auto-refresh-panel__label" htmlFor="filter-search">
+              Search
+            </label>
             <Input
+              id="filter-search"
               type="text"
-              label="Search"
-              labelPlacement="outside"
+              aria-label="Search"
               placeholder="Search in commit content..."
               value={localOptions.searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('searchQuery', e.target.value)}
-              startContent={<Search className="text-default-400" size={16} />}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('searchQuery', e.target.value)
+              }
+              classNames={{
+                inputWrapper: 'auto-refresh-panel__input filter-panel__input',
+                // innerWrapper: 'auto-refresh-panel__input filter-panel__input',
+              }}
+              startContent={
+                <span className="filter-panel__field-icon morphic-input-icon" aria-hidden="true">
+                  <Search className="morphic-icon" size={18} strokeWidth={2} />
+                </span>
+              }
               endContent={
-                localOptions.searchQuery && (
+                localOptions.searchQuery ? (
                   <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    onClick={() => handleChange('searchQuery', '')}
+                    type="button"
+                    className="filter-panel__icon-btn morphic-input-action"
                     aria-label="Clear search"
+                    onPress={() => handleChange('searchQuery', '')}
                   >
-                    <X size={14} strokeWidth={2} />
+                    <X className="morphic-icon" size={18} strokeWidth={2} aria-hidden="true" />
                   </Button>
-                )
+                ) : null
               }
             />
           </div>
+        </div>
 
-          {/* Show only active items */}
-          <div>
+        {/* Show only active items */}
+        <div className="auto-refresh-panel__section filter-panel__section">
+          <div className="filter-panel__toggle">
             <Switch
               isSelected={localOptions.onlyShowActive}
               onValueChange={(value) => handleChange('onlyShowActive', value)}
@@ -359,22 +368,20 @@ export const FilterPanel = ({
               Show only active tasks
             </Switch>
           </div>
+        </div>
 
-          {/* Active filters */}
-          {renderActiveFilters()}
+        {/* Active filters */}
+        <div className="auto-refresh-panel__section filter-panel__section">{renderActiveFilters()}</div>
 
-          {/* Reset button */}
-          <div className="pt-2">
-            <Button
-              variant="flat"
-              color="default"
-              className="w-full"
-              startContent={<RotateCcw size={16} strokeWidth={2} />}
-              onClick={handleReset}
-            >
-              Reset
-            </Button>
-          </div>
+        <div className="auto-refresh-panel__footer">
+          <Button
+            onPress={handleReset}
+            className="morphic-btn filter-panel__reset"
+            type="button"
+            startContent={<RotateCcw className="morphic-icon" size={16} strokeWidth={2} aria-hidden="true" />}
+          >
+            Reset
+          </Button>
         </div>
       </CardBody>
     </Card>
