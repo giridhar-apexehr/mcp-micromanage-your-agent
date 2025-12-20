@@ -34,3 +34,6 @@ Thumbs.db
 
 # Data files
 visualization/public/data
+
+# Test coverage
+coverage/
