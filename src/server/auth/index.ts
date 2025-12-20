@@ -27,6 +27,34 @@ type ProviderDefinition = {
   clientSecret: () => string | undefined
   scope: () => string
   callbackUrl: (req: express.Request) => string
+  requiredEnvKeys: string[]
+  optionalEnvKeys: string[]
+}
+
+class GoogleStrategy extends Strategy {
+  #hostedDomain: string
+
+  constructor(
+    options: StrategyOptions,
+    verify: VerifyFunction,
+    hostedDomain: string,
+  ) {
+    super(options, verify)
+    this.#hostedDomain = hostedDomain
+  }
+
+  authorizationRequestParams(
+    req: express.Request,
+    options: Parameters<Strategy['authorizationRequestParams']>[1],
+  ) {
+    const base = super.authorizationRequestParams(req, options)
+    if (!base) return { hd: this.#hostedDomain }
+    if (base instanceof URLSearchParams) {
+      base.set('hd', this.#hostedDomain)
+      return base
+    }
+    return { ...base, hd: this.#hostedDomain }
+  }
 }
 
 const parseCommaList = (value: string | undefined): string[] => {
@@ -81,6 +109,12 @@ const getProviderDefinitions = (): Record<ProviderId, ProviderDefinition> => {
       callbackUrl: (req) =>
         process.env.OIDC_CALLBACK_URL ??
         `${req.protocol}://${req.get('host')}/auth/oidc/callback`,
+      requiredEnvKeys: [
+        'OIDC_ISSUER_URL',
+        'OIDC_CLIENT_ID',
+        'OIDC_CLIENT_SECRET',
+      ],
+      optionalEnvKeys: ['OIDC_SCOPE', 'OIDC_CALLBACK_URL'],
     },
     google: {
       id: 'google',
@@ -92,6 +126,12 @@ const getProviderDefinitions = (): Record<ProviderId, ProviderDefinition> => {
       callbackUrl: (req) =>
         process.env.GOOGLE_CALLBACK_URL ??
         `${req.protocol}://${req.get('host')}/auth/google/callback`,
+      requiredEnvKeys: ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'],
+      optionalEnvKeys: [
+        'GOOGLE_SCOPE',
+        'GOOGLE_CALLBACK_URL',
+        'GOOGLE_HOSTED_DOMAIN',
+      ],
     },
   }
 }
@@ -176,8 +216,19 @@ export const registerAuth = (app: express.Express): void => {
         callbackURL: def.callbackUrl(req),
       }
 
-      passport.use(providerId, new Strategy(options, verify))
+      if (providerId === 'google') {
+        const hostedDomain = process.env.GOOGLE_HOSTED_DOMAIN
+        if (hostedDomain) {
+          passport.use(
+            providerId,
+            new GoogleStrategy(options, verify, hostedDomain),
+          )
+          initialized.add(providerId)
+          return
+        }
+      }
 
+      passport.use(providerId, new Strategy(options, verify))
       initialized.add(providerId)
     })()
 
@@ -189,12 +240,19 @@ export const registerAuth = (app: express.Express): void => {
     res.status(200).json({
       providers: providers.map((id) => {
         const def = definitions[id]
+        const missingConfigKeys = def.requiredEnvKeys.filter(
+          (key) => !process.env[key],
+        )
         return {
           id,
           displayName: def.displayName,
           configured: Boolean(
             def.clientId() && def.clientSecret() && def.issuerUrl(),
           ),
+          requiredEnvKeys: def.requiredEnvKeys,
+          optionalEnvKeys: def.optionalEnvKeys,
+          missingConfigKeys,
+          loginUrl: `/auth/${id}/login`,
         }
       }),
     })
