@@ -32,6 +32,10 @@ const addDaysIso = (date: Date, days: number): string => {
 }
 
 const getAuthenticatedUserId = (req: express.Request): string | undefined => {
+  if ((req as { auth?: { userId?: string } }).auth?.userId) {
+    return (req as { auth: { userId: string } }).auth.userId
+  }
+
   if (process.env.NODE_ENV === 'test') {
     const testUserId = req.get('x-test-user-id')
     if (testUserId) return testUserId
@@ -41,6 +45,30 @@ const getAuthenticatedUserId = (req: express.Request): string | undefined => {
   const userId = (req.session as { userId?: string }).userId
   if (!userId) return undefined
   return userId
+}
+
+const getPatWorkspaceId = (req: express.Request): string | null | undefined => {
+  const auth = (req as { auth?: { workspaceId?: string | null } }).auth
+  if (!auth) return undefined
+  if (auth.workspaceId === null) return null
+  if (typeof auth.workspaceId === 'string') return auth.workspaceId
+  return undefined
+}
+
+const enforcePatWorkspaceScope = (
+  req: express.Request,
+  res: express.Response,
+  workspaceId: string,
+): boolean => {
+  const patWorkspaceId = getPatWorkspaceId(req)
+  if (patWorkspaceId === undefined || patWorkspaceId === null) return true
+
+  if (patWorkspaceId !== workspaceId) {
+    res.status(403).json({ error: 'Forbidden' })
+    return false
+  }
+
+  return true
 }
 
 const requireUserId = (
@@ -104,7 +132,9 @@ export const createWorkspacesRouter = (): Router => {
 
     const handle = createDatabase()
     try {
-      const workspaces = await handle.db
+      const patWorkspaceId = getPatWorkspaceId(req)
+
+      let query = handle.db
         .selectFrom('workspaces')
         .innerJoin(
           'workspace_members',
@@ -118,6 +148,12 @@ export const createWorkspacesRouter = (): Router => {
           'workspace_members.role as role',
         ])
         .where('workspace_members.user_id', '=', userId)
+
+      if (patWorkspaceId && typeof patWorkspaceId === 'string') {
+        query = query.where('workspaces.id', '=', patWorkspaceId)
+      }
+
+      const workspaces = await query
         .orderBy('workspaces.created_at', 'asc')
         .execute()
 
@@ -130,6 +166,12 @@ export const createWorkspacesRouter = (): Router => {
   router.post('/workspaces', async (req, res) => {
     const userId = requireUserId(req, res)
     if (!userId) return
+
+    const patWorkspaceId = getPatWorkspaceId(req)
+    if (patWorkspaceId && typeof patWorkspaceId === 'string') {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
 
     const name = String(req.body?.name ?? '').trim()
     if (!name) {
@@ -181,6 +223,8 @@ export const createWorkspacesRouter = (): Router => {
       return
     }
 
+    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
+
     const handle = createDatabase()
 
     try {
@@ -222,6 +266,8 @@ export const createWorkspacesRouter = (): Router => {
       res.status(400).json({ error: 'Missing workspaceId' })
       return
     }
+
+    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
 
     const targetUserId = String(req.body?.userId ?? '').trim()
     if (!targetUserId) {
@@ -293,6 +339,8 @@ export const createWorkspacesRouter = (): Router => {
         return
       }
 
+      if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
+
       const handle = createDatabase()
 
       try {
@@ -329,6 +377,8 @@ export const createWorkspacesRouter = (): Router => {
       res.status(400).json({ error: 'Missing workspaceId' })
       return
     }
+
+    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
 
     const handle = createDatabase()
 
@@ -401,6 +451,8 @@ export const createWorkspacesRouter = (): Router => {
         res.status(400).json({ error: 'Invite already used' })
         return
       }
+
+      if (!enforcePatWorkspaceScope(req, res, invite.workspace_id)) return
 
       const nowDate = new Date()
       const expiresDate = new Date(invite.expires_at)

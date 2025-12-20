@@ -8,6 +8,7 @@ import logger from '../utils/logger.js'
 import type { HttpServerConfig } from './config.js'
 import { createDatabase, destroyDatabase } from './db/index.js'
 import { registerAuth } from './auth/index.js'
+import { registerPatAuth } from './auth/patAuth.js'
 import { registerCsrf } from './csrf/index.js'
 import { registerWorkspaces } from './workspaces/register.js'
 import { registerPats } from './pats/register.js'
@@ -19,6 +20,7 @@ export const createApp = (config: HttpServerConfig): express.Express => {
   app.use(cors({ origin: config.corsOrigin, credentials: true }))
 
   registerAuth(app)
+  registerPatAuth(app)
   registerCsrf(app)
   registerWorkspaces(app)
   registerPats(app)
