@@ -43,25 +43,38 @@ npm run build
 
 ```json
 {
-  "currentTicket": {
-    "goal": "チケットの目標",
-    "pullRequests": [
-      {
-        "goal": "PRの目標",
-        "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment",
-        "commits": [
-          {
-            "goal": "コミットの目標",
-            "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment"
-          }
-        ]
+  "agents": {
+    "<agentId>": {
+      "workplans": {
+        "<workplanId>": {
+          "goal": "チケットの目標",
+          "pullRequests": [
+            {
+              "goal": "PRの目標",
+              "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment|user_review",
+              "commits": [
+                {
+                  "goal": "コミットの目標",
+                  "status": "not_started|in_progress|blocked|completed|cancelled|needsRefinment|user_review"
+                }
+              ]
+            }
+          ]
+        }
       }
-    ]
+    }
   },
   "lastUpdated": "2023-03-23T11:19:23.960Z",
-  "version": "1.0.0"
+  "version": "3.0.0"
 }
 ```
+
+起動時はダッシュボードが表示されます。
+
+- ダッシュボードで `agentId` と `workplanId` を選択すると、該当ワークプラン画面が開きます。
+- ワークプラン画面からは「Back to dashboard」でダッシュボードに戻れます。
+
+`currentTicket` を含む旧形式（legacy）も読み込み可能です。
 
 ## 機能
 - PR（グループノード）とコミット（子ノード）の階層構造表示
@@ -110,6 +123,31 @@ npm run test:responsive
 - 大型ディスプレイ
 
 テスト結果のスクリーンショットは `test/screenshots` ディレクトリに保存されます。
+
+## HeroUI Integration
+
+The application now uses HeroUI for components while preserving the existing "morphic" theme:
+
+### Theme Customization
+- **Tokens**: `src/theme/tokens.css` defines CSS variables for light/dark modes
+- **Base**: `src/theme/base.css` provides body and base button resets
+- **Primitives**: `src/theme/primitives.css` contains `.morphic-*` component styles
+- **Topbar**: `src/theme/topbar.css` provides header/topbar styling
+- **Imports**: `src/index.css` imports theme files in order (tokens → base → primitives → topbar)
+
+### Dark Mode
+- Standardized on `html.dark-mode` class (Tailwind config: `darkMode: ['class', '.dark-mode']`)
+- `useThemeMode` hook adds/removes only `.dark-mode` on `<html>`
+- No `.dark` class usage in CSS/JSX
+
+### Component Variants
+- `MorphicButton` wraps HeroUI Button with `extendVariants` for morphic styling
+- Custom variants enabled by default to match existing look
+
+### Styling Architecture
+- Theme styles separated from component styles
+- Component styles colocated with components
+- ReactFlow components and styles remain unchanged
 
 ## ライセンス
 

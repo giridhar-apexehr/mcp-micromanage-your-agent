@@ -33,5 +33,4 @@ pids
 Thumbs.db
 
 # Data files
-visualization/public/data/workplan.json 
-visualization/public/data/workplan.json
+visualization/public/data

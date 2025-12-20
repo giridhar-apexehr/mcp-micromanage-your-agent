@@ -1,6 +1,6 @@
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { z } from 'zod';
-import { type PlanTaskInput, type UpdateStatusInput, type WorkPlanInitOptions } from '../aggregates/workplan.js';
+import { type InsertCommitInput, type PlanTaskInput, type UpdateStatusInput, type WorkPlanInitOptions } from '../aggregates/workplan.js';
 import logger from '../utils/logger.js';
 
 
@@ -78,4 +78,4 @@ export function createErrorResponse(
 }
 
 // エクスポートする型
-export type { PlanTaskInput, UpdateStatusInput, WorkPlanInitOptions }; 
+export type { InsertCommitInput, PlanTaskInput, UpdateStatusInput, WorkPlanInitOptions };

@@ -2,10 +2,18 @@ import { Status } from './status.js';
 import { PullRequest } from './pullRequest.js';
 import { PlanTaskInput } from '../aggregates/workplan.js';
 
+export type LatestWorkedOn = {
+  at: string;
+  prIndex: number;
+  commitIndex: number;
+  status: Status;
+};
+
 export type Ticket = {
   goal: string;
   pullRequests: PullRequest[];
   needsMoreThoughts?: boolean;
+  latestWorkedOn?: LatestWorkedOn;
 };
 
 // Helper function to check if ticket exists

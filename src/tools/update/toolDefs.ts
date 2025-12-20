@@ -10,6 +10,8 @@ export const UPDATE_STATUS_TOOL: Tool<{
   status: z.ZodEnum<["not_started", "in_progress", "user_review", "completed", "cancelled", "needsRefinment"]>;
   goal?: z.ZodOptional<z.ZodString>;
   developerNote?: z.ZodOptional<z.ZodString>;
+  agentId: z.ZodString;
+  workplanId: z.ZodString;
 }> = {
   name: "update",
   description: `
@@ -31,7 +33,9 @@ export const UPDATE_STATUS_TOOL: Tool<{
     goal: z.string().min(1, "Goal must be a non-empty string").optional()
       .describe("New goal description for the commit. Optional - only provide if you want to change the commit goal."),
     developerNote: z.string().optional()
-      .describe("Developer implementation notes. Can be added to both PRs and commits to document important implementation details.")
+      .describe("Developer implementation notes. Can be added to both PRs and commits to document important implementation details."),
+    agentId: z.string().min(1, 'agentId must be a non-empty string').describe('Required identifier for the calling agent.'),
+    workplanId: z.string().min(1, 'workplanId must be a non-empty string').describe('Required identifier for which workplan to update. Reuse the same workplanId for the current ticket/thread; do not create a new one per prompt. Only switch when the user explicitly requests it.')
   },
   handler: async (params, extra: RequestHandlerExtra) => {
     try {
@@ -54,8 +58,8 @@ export const UPDATE_STATUS_TOOL: Tool<{
         goal: params.goal ? String(params.goal) : undefined,
         developerNote: params.developerNote ? String(params.developerNote) : undefined
       };
-      
-      const result = workPlan.updateStatus(updateParams);
+
+      const result = workPlan.updateStatus(updateParams, String(params.agentId), String(params.workplanId));
       
       return {
         content: result.content.map(item => ({
