@@ -3,6 +3,7 @@ import crypto from 'node:crypto'
 import type express from 'express'
 import { Router } from 'express'
 
+import { writeAuditEvent } from '../audit/index.js'
 import { createDatabase, destroyDatabase } from '../db/index.js'
 
 declare module 'express-session' {
@@ -122,6 +123,15 @@ export const createPatsRouter = (): Router => {
         })
         .execute()
 
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId,
+        action: 'pats.create',
+        resourceType: 'pat',
+        resourceId: id,
+        metadata: { name },
+      })
+
       res.status(201).json({ id, secret })
     } finally {
       await destroyDatabase(handle)
@@ -143,7 +153,7 @@ export const createPatsRouter = (): Router => {
     try {
       const existing = await handle.db
         .selectFrom('user_pats')
-        .select(['id', 'revoked_at'])
+        .select(['id', 'revoked_at', 'workspace_id'])
         .where('id', '=', id)
         .where('user_id', '=', userId)
         .executeTakeFirst()
@@ -161,6 +171,15 @@ export const createPatsRouter = (): Router => {
           .where('user_id', '=', userId)
           .execute()
       }
+
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId: existing.workspace_id ?? null,
+        action: 'pats.revoke',
+        resourceType: 'pat',
+        resourceId: id,
+        metadata: {},
+      })
 
       res.status(200).json({ ok: true })
     } finally {

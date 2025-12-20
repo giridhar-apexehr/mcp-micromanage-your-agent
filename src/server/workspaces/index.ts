@@ -3,13 +3,14 @@ import crypto from 'node:crypto'
 import type express from 'express'
 import { Router } from 'express'
 
+import { writeAuditEvent } from '../audit/index.js'
+import { createDatabase, destroyDatabase } from '../db/index.js'
+
 declare module 'express-session' {
   interface SessionData {
     userId?: string
   }
 }
-
-import { createDatabase, destroyDatabase } from '../db/index.js'
 
 type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer'
 
@@ -218,6 +219,15 @@ export const createWorkspacesRouter = (): Router => {
         })
         .execute()
 
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId: workspaceId,
+        action: 'workspaces.create',
+        resourceType: 'workspace',
+        resourceId: workspaceId,
+        metadata: { name },
+      })
+
       res.status(201).json({ id: workspaceId, name })
     } finally {
       await destroyDatabase(handle)
@@ -326,6 +336,15 @@ export const createWorkspacesRouter = (): Router => {
         })
         .execute()
 
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId,
+        action: 'workspace_members.add',
+        resourceType: 'workspace_member',
+        resourceId: `${workspaceId}:${targetUserId}`,
+        metadata: { targetUserId, role },
+      })
+
       res.status(201).json({ ok: true })
     } finally {
       await destroyDatabase(handle)
@@ -365,6 +384,15 @@ export const createWorkspacesRouter = (): Router => {
           .where('workspace_id', '=', workspaceId)
           .where('user_id', '=', targetUserId)
           .execute()
+
+        await writeAuditEvent(handle.db, req, {
+          actorUserId: userId,
+          workspaceId,
+          action: 'workspace_members.remove',
+          resourceType: 'workspace_member',
+          resourceId: `${workspaceId}:${targetUserId}`,
+          metadata: { targetUserId },
+        })
 
         res.status(200).json({ ok: true })
       } finally {
@@ -417,6 +445,15 @@ export const createWorkspacesRouter = (): Router => {
           created_at: now,
         })
         .execute()
+
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId,
+        action: 'workspace_invites.create',
+        resourceType: 'workspace_invite',
+        resourceId: inviteId,
+        metadata: { expiresAt, role: 'viewer' },
+      })
 
       res.status(201).json({ token, expiresAt, role: 'viewer' })
     } finally {
@@ -483,6 +520,15 @@ export const createWorkspacesRouter = (): Router => {
         .set({ used_at: now })
         .where('id', '=', invite.id)
         .execute()
+
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId: invite.workspace_id,
+        action: 'workspace_invites.accept',
+        resourceType: 'workspace_invite',
+        resourceId: invite.id,
+        metadata: { role: invite.role },
+      })
 
       res.status(200).json({ ok: true, workspaceId: invite.workspace_id })
     } finally {

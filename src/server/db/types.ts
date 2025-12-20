@@ -52,10 +52,23 @@ export interface UserPatsTable {
   revoked_at: Timestamp | null
 }
 
+export interface AuditLogTable {
+  id: string
+  at: Timestamp
+  actor_user_id: string
+  actor_pat_id: string | null
+  workspace_id: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  metadata_json: string | null
+}
+
 export interface DB {
   users: UsersTable
   workspaces: WorkspacesTable
   workspace_members: WorkspaceMembersTable
   workspace_invites: WorkspaceInvitesTable
   user_pats: UserPatsTable
+  audit_log: AuditLogTable
 }
