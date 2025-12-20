@@ -13,6 +13,13 @@ import { createDatabase, destroyDatabase } from '../db/index.js'
 
 type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer'
 
+const ROLE_RANK: Record<WorkspaceRole, number> = {
+  viewer: 1,
+  editor: 2,
+  admin: 3,
+  owner: 4,
+}
+
 const nowIso = (): string => new Date().toISOString()
 
 const sha256Hex = (value: string): string => {
@@ -46,6 +53,46 @@ const requireUserId = (
     return undefined
   }
   return userId
+}
+
+const getWorkspaceRole = async (
+  db: ReturnType<typeof createDatabase>['db'],
+  userId: string,
+  workspaceId: string,
+): Promise<WorkspaceRole | undefined> => {
+  const membership = await db
+    .selectFrom('workspace_members')
+    .select(['role'])
+    .where('workspace_id', '=', workspaceId)
+    .where('user_id', '=', userId)
+    .executeTakeFirst()
+
+  if (!membership) return undefined
+
+  const role = String(membership.role) as WorkspaceRole
+  if (!['owner', 'admin', 'editor', 'viewer'].includes(role)) return undefined
+  return role
+}
+
+const requireWorkspaceRole = async (
+  db: ReturnType<typeof createDatabase>['db'],
+  res: express.Response,
+  userId: string,
+  workspaceId: string,
+  minRole: WorkspaceRole,
+): Promise<WorkspaceRole | undefined> => {
+  const role = await getWorkspaceRole(db, userId, workspaceId)
+  if (!role) {
+    res.status(403).json({ error: 'Forbidden' })
+    return undefined
+  }
+
+  if (ROLE_RANK[role] < ROLE_RANK[minRole]) {
+    res.status(403).json({ error: 'Forbidden' })
+    return undefined
+  }
+
+  return role
 }
 
 export const createWorkspacesRouter = (): Router => {
@@ -137,15 +184,14 @@ export const createWorkspacesRouter = (): Router => {
     const handle = createDatabase()
 
     try {
-      const membership = await handle.db
-        .selectFrom('workspace_members')
-        .select(['role'])
-        .where('workspace_id', '=', workspaceId)
-        .where('user_id', '=', userId)
-        .executeTakeFirst()
-
-      if (!membership) {
-        res.status(403).json({ error: 'Forbidden' })
+      const role = await requireWorkspaceRole(
+        handle.db,
+        res,
+        userId,
+        workspaceId,
+        'viewer',
+      )
+      if (!role) {
         return
       }
 
@@ -192,15 +238,14 @@ export const createWorkspacesRouter = (): Router => {
     const handle = createDatabase()
 
     try {
-      const membership = await handle.db
-        .selectFrom('workspace_members')
-        .select(['role'])
-        .where('workspace_id', '=', workspaceId)
-        .where('user_id', '=', userId)
-        .executeTakeFirst()
-
-      if (!membership || membership.role !== 'owner') {
-        res.status(403).json({ error: 'Forbidden' })
+      const actorRole = await requireWorkspaceRole(
+        handle.db,
+        res,
+        userId,
+        workspaceId,
+        'owner',
+      )
+      if (!actorRole) {
         return
       }
 
@@ -251,15 +296,14 @@ export const createWorkspacesRouter = (): Router => {
       const handle = createDatabase()
 
       try {
-        const membership = await handle.db
-          .selectFrom('workspace_members')
-          .select(['role'])
-          .where('workspace_id', '=', workspaceId)
-          .where('user_id', '=', userId)
-          .executeTakeFirst()
-
-        if (!membership || membership.role !== 'owner') {
-          res.status(403).json({ error: 'Forbidden' })
+        const actorRole = await requireWorkspaceRole(
+          handle.db,
+          res,
+          userId,
+          workspaceId,
+          'owner',
+        )
+        if (!actorRole) {
           return
         }
 
@@ -289,15 +333,14 @@ export const createWorkspacesRouter = (): Router => {
     const handle = createDatabase()
 
     try {
-      const membership = await handle.db
-        .selectFrom('workspace_members')
-        .select(['role'])
-        .where('workspace_id', '=', workspaceId)
-        .where('user_id', '=', userId)
-        .executeTakeFirst()
-
-      if (!membership || membership.role !== 'owner') {
-        res.status(403).json({ error: 'Forbidden' })
+      const actorRole = await requireWorkspaceRole(
+        handle.db,
+        res,
+        userId,
+        workspaceId,
+        'owner',
+      )
+      if (!actorRole) {
         return
       }
 
