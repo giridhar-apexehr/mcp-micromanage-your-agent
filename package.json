@@ -19,7 +19,7 @@
     "prepare": "npm run build",
     "watch": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
-    "lint": "biome",
+    "lint": "biome lint",
     "format": "biome format"
   },
   "dependencies": {

@@ -1,61 +1,72 @@
 import { spawn } from 'child_process'
 import fs from 'fs'
+import net from 'net'
 import os from 'os'
 import path from 'path'
 
-const waitForListeningUrl = (child, timeoutMs = 15_000) =>
-  new Promise((resolve, reject) => {
-    let buffer = ''
+const pickFreePort = async () => {
+  return await new Promise((resolve, reject) => {
+    const server = net.createServer()
+    server.unref()
 
-    const timeout = setTimeout(() => {
-      try {
-        child.kill('SIGTERM')
-      } catch {
-        // ignore
-      }
-      cleanup()
-      reject(
-        new Error(`Timed out waiting for server to start. Output:\n${buffer}`),
-      )
-    }, timeoutMs)
-    timeout.unref()
+    server.once('error', reject)
 
-    const onData = (chunk) => {
-      buffer += chunk.toString('utf8')
-
-      const lines = buffer.split(/\r?\n/)
-      buffer = lines.pop() ?? ''
-
-      for (const line of lines) {
-        const match = line.match(/HTTP server listening on (http:\/\/\S+)/)
-        if (match) {
-          cleanup()
-          resolve(match[1])
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+      server.close(() => {
+        if (!address || typeof address === 'string') {
+          reject(new Error('Failed to pick ephemeral port'))
           return
         }
-      }
-    }
+        resolve(address.port)
+      })
+    })
+  })
+}
 
-    const onExit = (code, signal) => {
-      cleanup()
-      reject(
-        new Error(
-          `Server exited before ready (code=${code}, signal=${signal}). Output:\n${buffer}`,
-        ),
+const sleep = async (ms) => {
+  await new Promise((resolve) => {
+    const t = setTimeout(resolve, ms)
+    t.unref()
+  })
+}
+
+const waitForReady = async ({
+  baseUrl,
+  child,
+  stdout,
+  stderr,
+  timeoutMs = 15_000,
+}) => {
+  const startedAt = Date.now()
+
+  while (Date.now() - startedAt < timeoutMs) {
+    if (child.exitCode !== null) {
+      throw new Error(
+        `Server exited before ready (code=${child.exitCode}).\nstdout:\n${stdout}\nstderr:\n${stderr}`,
       )
     }
 
-    const cleanup = () => {
-      clearTimeout(timeout)
-      child.stderr?.off('data', onData)
-      child.stdout?.off('data', onData)
-      child.off('exit', onExit)
+    try {
+      const res = await fetch(`${baseUrl}/readyz`)
+      if (res.status === 200) return
+    } catch {
+      // server not listening yet
     }
 
-    child.stderr?.on('data', onData)
-    child.stdout?.on('data', onData)
-    child.on('exit', onExit)
-  })
+    await sleep(100)
+  }
+
+  try {
+    child.kill('SIGTERM')
+  } catch {
+    // ignore
+  }
+
+  throw new Error(
+    `Timed out waiting for /readyz to become ready at ${baseUrl}.\nstdout:\n${stdout}\nstderr:\n${stderr}`,
+  )
+}
 
 const shutdownChild = (child) =>
   new Promise((resolve) => {
@@ -92,12 +103,14 @@ describe('server boot smoke', () => {
       path.join(os.tmpdir(), 'mcp-micromanage-server-'),
     )
     const dbPath = path.join(tmpDir, 'app.sqlite')
+    const port = await pickFreePort()
+    const baseUrl = `http://127.0.0.1:${port}`
 
     const env = {
       ...process.env,
       HTTP_HOST: '127.0.0.1',
-      HTTP_PORT: '0',
-      LOG_LEVEL: 'INFO',
+      HTTP_PORT: String(port),
+      LOG_LEVEL: 'NONE',
       DB_DIALECT: 'sqlite',
       DB_PATH: dbPath,
     }
@@ -108,8 +121,17 @@ describe('server boot smoke', () => {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
 
+    let stdout = ''
+    let stderr = ''
+    child.stdout?.on('data', (chunk) => {
+      stdout += chunk.toString('utf8')
+    })
+    child.stderr?.on('data', (chunk) => {
+      stderr += chunk.toString('utf8')
+    })
+
     try {
-      const baseUrl = await waitForListeningUrl(child)
+      await waitForReady({ baseUrl, child, stdout, stderr, timeoutMs: 15_000 })
 
       const healthRes = await fetch(`${baseUrl}/healthz`)
       expect(healthRes.status).toBe(200)
