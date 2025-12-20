@@ -15,7 +15,6 @@ import type { WorkplanCatalog } from '../app/utils/workplanCatalog'
 import { Header } from '../components/common/Header'
 
 type DashboardPageProps = {
-  isDarkMode: boolean
   themeMode: ThemeMode
   toggleThemeMode: () => void
   workplanCatalog: WorkplanCatalog | null
@@ -27,7 +26,6 @@ type DashboardPageProps = {
  * Dashboard page showing available agents/workplans.
  */
 export function DashboardPage({
-  isDarkMode,
   themeMode,
   toggleThemeMode,
   workplanCatalog,
@@ -35,7 +33,7 @@ export function DashboardPage({
   openWorkplan,
 }: DashboardPageProps) {
   return (
-    <div className={`app ${isDarkMode ? 'dark-theme' : 'light-theme'}`}>
+    <div className="app">
       <Header
         title="Workplans"
         subtitle="Select an agent and workplan"

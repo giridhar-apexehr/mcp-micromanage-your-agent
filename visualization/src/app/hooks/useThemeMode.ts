@@ -24,6 +24,25 @@ export type UseThemeModeResult = {
  * Hook that manages the theme mode selection and applies the `dark-mode` class.
  */
 export const useThemeMode = (): UseThemeModeResult => {
+  /**
+   * Apply the theme-related classes on the root document element.
+   *
+   * This project uses `.dark-mode` for both HeroUI/Tailwind dark variants (via Tailwind config)
+   * and morphic CSS variables. Only `.dark-mode` is applied to avoid duplication.
+   *
+   * @param isDarkModeNext Whether dark mode should be active.
+   */
+  const applyThemeModeClassNames = useCallback((isDarkModeNext: boolean) => {
+    const root = document.documentElement
+
+    if (isDarkModeNext) {
+      root.classList.add('dark-mode')
+      return
+    }
+
+    root.classList.remove('dark-mode')
+  }, [])
+
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const savedThemeMode = localStorage.getItem('themeMode')
     if (
@@ -64,14 +83,10 @@ export const useThemeMode = (): UseThemeModeResult => {
 
   // Add/remove class from html tag when theme setting changes
   useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark-mode')
-    } else {
-      document.documentElement.classList.remove('dark-mode')
-    }
+    applyThemeModeClassNames(isDarkMode)
 
     localStorage.setItem('themeMode', themeMode)
-  }, [isDarkMode, themeMode])
+  }, [applyThemeModeClassNames, isDarkMode, themeMode])
 
   useEffect(() => {
     if (themeMode !== 'system') return

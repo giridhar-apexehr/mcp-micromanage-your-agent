@@ -66,7 +66,17 @@ export function Header({
   wrapActions = true,
 }: HeaderProps) {
   return (
-    <Navbar className="app-topbar" maxWidth="full">
+    <Navbar
+      className="app-topbar"
+      maxWidth="full"
+      position="static"
+      isBlurred={false}
+      isBordered={false}
+      classNames={{
+        base: 'bg-transparent bg-img-inherit shadow-none',
+        wrapper: 'px-0 gap-0 h-auto max-w-none',
+      }}
+    >
       <div className="topbar-inner">
         {nav && (
           <NavbarContent className="topbar-nav" justify="start">

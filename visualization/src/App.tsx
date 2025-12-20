@@ -70,7 +70,7 @@ function App() {
     closeDelayMs: 180,
   })
 
-  const { themeMode, isDarkMode, toggleThemeMode } = useThemeMode()
+  const { themeMode, toggleThemeMode } = useThemeMode()
 
   const goToDashboard = useCallback(() => {
     autoRefreshPanel.reset()
@@ -106,7 +106,6 @@ function App() {
   if (!workplan) {
     return (
       <DashboardPage
-        isDarkMode={isDarkMode}
         themeMode={themeMode}
         toggleThemeMode={toggleThemeMode}
         workplanCatalog={workplanCatalog}
@@ -118,7 +117,6 @@ function App() {
 
   return (
     <WorkplanPage
-      isDarkMode={isDarkMode}
       workplan={workplan}
       filterOptions={filterOptions}
       header={

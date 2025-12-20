@@ -1,139 +1,8 @@
 @import "tailwindcss";
-
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  /* ライトモード（デフォルト）の変数 */
-  --background-color: #f8f8f8;
-  --text-color: #1a1a1a;
-  --node-bg: #ffffff;
-  --node-border: #e2e8f0;
-  --node-selected: #d4e6ff;
-  --node-hover: #f0f7ff;
-  --pr-node-bg: #ebf4ff;
-  --commit-node-bg: #fff;
-  --start-node-bg: #e6fffa;
-  --edge-color: #64748b;
-  --panel-bg: #ffffff;
-  --panel-shadow: rgba(0, 0, 0, 0.15);
-  --filter-button-bg: #f1f5f9;
-  --filter-button-hover: #e2e8f0;
-  --status-not-started-bg: #f1f5f9;
-  --status-in-progress-bg: #eff6ff;
-  --status-completed-bg: #f0fdf4;
-  --status-cancelled-bg: #fef2f2;
-  --status-blocked-bg: #fff7ed;
-  --status-needs-refinement-bg: #fdf4ff;
-  --status-user-review-bg: #f3e8ff;
-  --status-node-bg-not_started: var(--status-not-started-bg);
-  --status-node-bg-in_progress: var(--status-in-progress-bg);
-  --status-node-bg-completed: var(--status-completed-bg);
-  --status-node-bg-cancelled: var(--status-cancelled-bg);
-  --status-node-bg-needsRefinment: var(--status-needs-refinement-bg);
-  --status-node-bg-user_review: var(--status-user-review-bg);
-  --status-border-not_started: #94a3b8;
-  --status-border-in_progress: #3b82f6;
-  --status-border-completed: #10b981;
-  --status-border-cancelled: #ef4444;
-  --status-border-needsRefinment: #f59e0b;
-  --status-border-user_review: #9333ea;
-  --input-bg: #ffffff;
-  --input-border: #e2e8f0;
-  --input-focus-border: #3b82f6;
-  --button-primary-bg: #3b82f6;
-  --button-primary-hover: #2563eb;
-  --button-secondary-bg: #64748b;
-  --button-secondary-hover: #475569;
-  --button-danger-bg: #ef4444;
-  --button-danger-hover: #dc2626;
-}
-
-/* ダークモードの変数 */
-.dark-mode {
-  --background-color: #1a1a1a;
-  --text-color: #f0f0f0;
-  --node-bg: #2d3748;
-  --node-border: #4a5568;
-  --node-selected: #3b4858;
-  --node-hover: #4a5568;
-  --pr-node-bg: #2c3e50;
-  --commit-node-bg: #2d3748;
-  --edge-color: #a0aec0;
-  --panel-bg: #2d3748;
-  --panel-shadow: rgba(0, 0, 0, 0.3);
-  --filter-button-bg: #4a5568;
-  --filter-button-hover: #2d3748;
-  --status-not-started-bg: #374151;
-  --status-in-progress-bg: #1e3a8a;
-  --status-completed-bg: #065f46;
-  --status-cancelled-bg: #7f1d1d;
-  --status-blocked-bg: #783c00;
-  --status-needs-refinement-bg: #701a75;
-  --status-user-review-bg: #701a75;
-  --status-node-bg-not_started: var(--status-not-started-bg);
-  --status-node-bg-in_progress: var(--status-in-progress-bg);
-  --status-node-bg-completed: var(--status-completed-bg);
-  --status-node-bg-cancelled: var(--status-cancelled-bg);
-  --status-node-bg-needsRefinment: var(--status-needs-refinement-bg);
-  --status-node-bg-user_review: var(--status-user-review-bg);
-  --status-border-not_started: #9ca3af;
-  --status-border-in_progress: #60a5fa;
-  --status-border-completed: #34d399;
-  --status-border-cancelled: #f87171;
-  --status-border-needsRefinment: #fbbf24;
-  --status-border-user_review: #c084fc;
-  --input-bg: #4a5568;
-  --input-border: #64748b;
-  --input-focus-border: #60a5fa;
-  --button-primary-bg: #3b82f6;
-  --button-primary-hover: #1d4ed8;
-  --button-secondary-bg: #64748b;
-  --button-secondary-hover: #475569;
-  --button-danger-bg: #ef4444;
-  --button-danger-hover: #b91c1c;
-}
-
-body {
-  margin: 0;
-  display: block;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: var(--background-color);
-  color: var(--text-color);
-  transition:
-    color 0.2s,
-    background-color 0.2s;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-@layer base {
-  button {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    color: inherit;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-    cursor: pointer;
-  }
-
-  button:hover {
-    border-color: transparent;
-  }
-
-  button:focus,
-  button:focus-visible {
-    outline: none;
-  }
-}
+@import "./theme/tokens.css";
+@import "./theme/base.css";
+@import "./theme/primitives.css";
+@import "./theme/topbar.css";
 
 @media (prefers-color-scheme: light) {
   :root {
@@ -568,17 +437,13 @@ h1 {
   color: white;
 }
 
-.dark-mode button:hover {
-  background-color: var(--button-secondary-hover);
-}
-
-.dark-mode input,
+/* .dark-mode input,
 .dark-mode select,
 .dark-mode textarea {
   background-color: var(--input-bg);
   color: var(--text-color);
   border-color: var(--input-border);
-}
+} */
 
 .dark-mode input::placeholder,
 .dark-mode textarea::placeholder {

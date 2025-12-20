@@ -1,4 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { Button } from '@heroui/button'
+import { Card, CardBody, CardHeader } from '@heroui/card'
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from '@heroui/dropdown'
+import { Input } from '@heroui/input'
+import { Switch } from '@heroui/switch'
+import { Chip } from '@heroui/chip'
 import { CommitStatus } from '../../types'
 import {
   AlertTriangle,
@@ -51,6 +57,10 @@ const STATUS_ICONS: Record<CommitStatus | 'all', IconType> = {
   user_review: Eye,
 }
 
+/**
+ * Filter panel component using HeroUI primitives.
+ * Preserves keyboard/focus behavior and floating positioning contract.
+ */
 export const FilterPanel = ({
   options,
   onChange,
@@ -60,19 +70,18 @@ export const FilterPanel = ({
 }: FilterPanelProps) => {
   const [localOptions, setLocalOptions] = useState<FilterOptions>(options)
   const panelRef = useRef<HTMLDivElement>(null)
-  const [isStatusMenuOpen, setIsStatusMenuOpen] = useState<boolean>(false)
-  const [activeStatusIndex, setActiveStatusIndex] = useState<number>(0)
-  const statusTriggerRef = useRef<HTMLButtonElement>(null)
-  const statusMenuRef = useRef<HTMLDivElement>(null)
-  const statusOptionRefs = useRef<Array<HTMLButtonElement | null>>([])
   const statusValues = Object.keys(STATUS_LABELS) as Array<CommitStatus | 'all'>
 
-  // Update internal state when options from props change
+  /**
+   * Update internal state when options from props change
+   */
   useEffect(() => {
     setLocalOptions(options)
   }, [options])
 
-  // Change handler (memoized)
+  /**
+   * Change handler (memoized)
+   */
   const handleChange = useCallback(
     <K extends keyof FilterOptions>(key: K, value: FilterOptions[K]) => {
       const newOptions = { ...localOptions, [key]: value }
@@ -82,7 +91,9 @@ export const FilterPanel = ({
     [localOptions, onChange],
   )
 
-  // Reset handler (memoized)
+  /**
+   * Reset handler (memoized)
+   */
   const handleReset = useCallback(() => {
     const defaultOptions: FilterOptions = {
       statusFilter: 'all',
@@ -93,7 +104,9 @@ export const FilterPanel = ({
     onChange(defaultOptions)
   }, [onChange])
 
-  // Close when clicking outside the panel
+  /**
+   * Close when clicking outside the panel
+   */
   useEffect(() => {
     if (!isOpen) return
 
@@ -116,79 +129,122 @@ export const FilterPanel = ({
     return () => document.removeEventListener('mousedown', handleOutsideClick)
   }, [isOpen, onClose, ignoreOutsideClickRef])
 
-  // Close panel with Esc key
+  /**
+   * Close panel with Esc key
+   */
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (isStatusMenuOpen) {
-          setIsStatusMenuOpen(false)
-          statusTriggerRef.current?.focus()
-          return
-        }
         onClose()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, isStatusMenuOpen, onClose])
+  }, [isOpen, onClose])
 
-  useEffect(() => {
-    if (!isOpen) return
-    if (!isStatusMenuOpen) return
+  /**
+   * Render active filter chips
+   */
+  const renderActiveFilters = () => {
+    const hasActiveFilters =
+      localOptions.statusFilter !== 'all' ||
+      localOptions.searchQuery.trim() ||
+      localOptions.onlyShowActive
 
-    const handleStatusOutsideClick = (event: MouseEvent) => {
-      const target = event.target as Node
-      const trigger = statusTriggerRef.current
-      const menu = statusMenuRef.current
+    if (!hasActiveFilters) return null
 
-      if (trigger && trigger.contains(target)) return
-      if (menu && menu.contains(target)) return
+    return (
+      <div className="filter-panel__badges">
+        <div className="filter-panel__badges-label">Active filters:</div>
 
-      setIsStatusMenuOpen(false)
-    }
+        {localOptions.statusFilter !== 'all' && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--blue"
+            onClose={() => handleChange('statusFilter', 'all')}
+            startContent={
+              (() => {
+                const Icon = STATUS_ICONS[localOptions.statusFilter as CommitStatus]
+                return <Icon className="morphic-icon" size={14} strokeWidth={2} />
+              })()
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('statusFilter', 'all')}
+                aria-label="Clear status filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">
+              {STATUS_LABELS[localOptions.statusFilter as CommitStatus]}
+            </span>
+          </Chip>
+        )}
 
-    document.addEventListener('mousedown', handleStatusOutsideClick)
-    return () =>
-      document.removeEventListener('mousedown', handleStatusOutsideClick)
-  }, [isOpen, isStatusMenuOpen])
+        {localOptions.searchQuery.trim() && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--green"
+            onClose={() => handleChange('searchQuery', '')}
+            startContent={
+              <Search className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('searchQuery', '')}
+                aria-label="Clear search filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">{localOptions.searchQuery}</span>
+          </Chip>
+        )}
 
-  useEffect(() => {
-    if (!isStatusMenuOpen) return
-    const selectedIndex = Math.max(
-      0,
-      statusValues.indexOf(localOptions.statusFilter),
+        {localOptions.onlyShowActive && (
+          <Chip
+            className="filter-panel__chip filter-panel__chip--yellow"
+            onClose={() => handleChange('onlyShowActive', false)}
+            startContent={
+              <RefreshCw className="morphic-icon" size={14} strokeWidth={2} aria-hidden="true" />
+            }
+            endContent={
+              <button
+                type="button"
+                className="filter-panel__chip-close"
+                onClick={() => handleChange('onlyShowActive', false)}
+                aria-label="Clear active-only filter"
+              >
+                <X size={14} strokeWidth={2} aria-hidden="true" />
+              </button>
+            }
+          >
+            <span className="filter-panel__chip-text">Active Only</span>
+          </Chip>
+        )}
+      </div>
     )
-    setActiveStatusIndex(selectedIndex)
-
-    // Focus after render.
-    queueMicrotask(() => {
-      statusOptionRefs.current[selectedIndex]?.focus()
-    })
-  }, [isStatusMenuOpen, localOptions.statusFilter, statusValues])
-
-  useEffect(() => {
-    if (isOpen) return
-    setIsStatusMenuOpen(false)
-  }, [isOpen])
+  }
 
   return (
-    <div
+    <Card
       ref={panelRef}
       className="auto-refresh-panel filter-panel"
       role="dialog"
       aria-label="Filter settings"
     >
-      <div className="auto-refresh-panel__header">
+      <CardHeader className="auto-refresh-panel__header">
         <div className="auto-refresh-panel__title filter-panel__title">
           <span className="filter-panel__title-icon" aria-hidden="true">
-            <SlidersHorizontal
-              className="morphic-icon"
-              size={18}
-              strokeWidth={2}
-            />
+            <SlidersHorizontal className="morphic-icon" size={18} strokeWidth={2} />
           </span>
           Filter Settings
         </div>
@@ -200,280 +256,134 @@ export const FilterPanel = ({
         >
           <X className="morphic-icon" size={18} strokeWidth={2} />
         </button>
-      </div>
-
-      <div className="auto-refresh-panel__section">
+      </CardHeader>
+      <CardBody className="p-0">
         {/* Status filter */}
-        <div className="filter-panel__field">
-          <label className="auto-refresh-panel__label">Status</label>
-          <div className="morphic-input-with-icon">
-            <button
-              ref={statusTriggerRef}
-              type="button"
-              className="auto-refresh-panel__input filter-panel__control"
-              aria-haspopup="listbox"
-              aria-expanded={isStatusMenuOpen}
-              aria-label="Status"
-              onClick={() => setIsStatusMenuOpen((prev) => !prev)}
-              onKeyDown={(event) => {
-                if (
-                  event.key === 'ArrowDown' ||
-                  event.key === 'Enter' ||
-                  event.key === ' '
-                ) {
-                  event.preventDefault()
-                  setIsStatusMenuOpen(true)
-                }
-              }}
-            >
-              {STATUS_LABELS[localOptions.statusFilter as CommitStatus | 'all']}
-            </button>
-            <div className="filter-panel__field-icon morphic-input-icon">
-              {(() => {
-                const Icon =
-                  STATUS_ICONS[
-                    localOptions.statusFilter as CommitStatus | 'all'
-                  ]
-                return (
-                  <Icon className="morphic-icon" size={16} strokeWidth={2} />
-                )
-              })()}
-            </div>
-            <div className="filter-panel__field-suffix morphic-input-suffix">
-              <ChevronDown
-                className="h-5 w-5 text-gray-400 filter-panel__chevron"
-                aria-hidden="true"
-              />
-            </div>
-
-            {isStatusMenuOpen && (
-              <div
-                ref={statusMenuRef}
-                className="filter-panel__menu"
-                role="listbox"
+        <div className="auto-refresh-panel__section">
+          <div className="filter-panel__field">
+            <label className="auto-refresh-panel__label">Status</label>
+            <Dropdown>
+              <DropdownTrigger>
+                <Button
+                  type="button"
+                  className="auto-refresh-panel__input filter-panel__control"
+                  aria-label="Status"
+                  startContent={
+                    <span className="filter-panel__field-icon morphic-input-icon" aria-hidden="true">
+                      {(() => {
+                        const Icon =
+                          STATUS_ICONS[localOptions.statusFilter as CommitStatus | 'all']
+                        return <Icon className="morphic-icon" size={16} strokeWidth={2} />
+                      })()}
+                    </span>
+                  }
+                  endContent={
+                    <span className="filter-panel__field-suffix morphic-input-suffix" aria-hidden="true">
+                      <ChevronDown className="filter-panel__chevron" size={18} strokeWidth={2} />
+                    </span>
+                  }
+                >
+                  {STATUS_LABELS[localOptions.statusFilter as CommitStatus | 'all']}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
                 aria-label="Status"
-                tabIndex={-1}
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape') {
-                    event.preventDefault()
-                    setIsStatusMenuOpen(false)
-                    statusTriggerRef.current?.focus()
-                    return
-                  }
-
-                  if (event.key === 'ArrowDown') {
-                    event.preventDefault()
-                    setActiveStatusIndex((prev) => {
-                      const next = Math.min(statusValues.length - 1, prev + 1)
-                      queueMicrotask(() =>
-                        statusOptionRefs.current[next]?.focus(),
-                      )
-                      return next
-                    })
-                    return
-                  }
-
-                  if (event.key === 'ArrowUp') {
-                    event.preventDefault()
-                    setActiveStatusIndex((prev) => {
-                      const next = Math.max(0, prev - 1)
-                      queueMicrotask(() =>
-                        statusOptionRefs.current[next]?.focus(),
-                      )
-                      return next
-                    })
-                    return
-                  }
-
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    const nextStatus = statusValues[activeStatusIndex]
-                    handleChange('statusFilter', nextStatus)
-                    setIsStatusMenuOpen(false)
-                    statusTriggerRef.current?.focus()
-                  }
+                className="filter-panel__menu filter-panel__menu--dropdown"
+                selectedKeys={new Set([localOptions.statusFilter])}
+                onSelectionChange={(keys) => {
+                  const selected = Array.from(keys)[0] as CommitStatus | 'all'
+                  handleChange('statusFilter', selected)
                 }}
               >
-                {statusValues.map((status, index) => {
+                {statusValues.map((status) => {
                   const Icon = STATUS_ICONS[status]
                   const isSelected = status === localOptions.statusFilter
 
                   return (
-                    <button
+                    <DropdownItem
                       key={status}
-                      type="button"
-                      role="option"
-                      aria-selected={isSelected}
                       className={`filter-panel__menu-item ${isSelected ? 'is-selected' : ''}`}
-                      onClick={() => {
-                        handleChange('statusFilter', status)
-                        setIsStatusMenuOpen(false)
-                        statusTriggerRef.current?.focus()
-                      }}
-                      ref={(node) => {
-                        statusOptionRefs.current[index] = node
-                      }}
-                      tabIndex={index === activeStatusIndex ? 0 : -1}
+                      startContent={
+                        <span className="filter-panel__menu-icon" aria-hidden="true">
+                          <Icon className="morphic-icon" size={16} strokeWidth={2} />
+                        </span>
+                      }
                     >
-                      <span
-                        className="filter-panel__menu-icon"
-                        aria-hidden="true"
-                      >
-                        <Icon
-                          className="morphic-icon"
-                          size={16}
-                          strokeWidth={2}
-                        />
-                      </span>
-                      <span className="filter-panel__menu-label">
-                        {STATUS_LABELS[status]}
-                      </span>
-                    </button>
+                      <span className="filter-panel__menu-label">{STATUS_LABELS[status]}</span>
+                    </DropdownItem>
                   )
                 })}
-              </div>
-            )}
+              </DropdownMenu>
+            </Dropdown>
           </div>
         </div>
-      </div>
 
-      <div className="auto-refresh-panel__section">
         {/* Search filter */}
-        <div className="filter-panel__field">
-          <label className="auto-refresh-panel__label">Search</label>
-          <div className="morphic-input-with-icon">
-            <input
+        <div className="auto-refresh-panel__section">
+          <div className="filter-panel__field">
+            <label className="auto-refresh-panel__label" htmlFor="filter-search">
+              Search
+            </label>
+            <Input
+              id="filter-search"
               type="text"
-              className="auto-refresh-panel__input filter-panel__input"
-              value={localOptions.searchQuery}
-              onChange={(e) => handleChange('searchQuery', e.target.value)}
+              aria-label="Search"
               placeholder="Search in commit content..."
+              value={localOptions.searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                handleChange('searchQuery', e.target.value)
+              }
+              classNames={{
+                inputWrapper: 'auto-refresh-panel__input filter-panel__input',
+                // innerWrapper: 'auto-refresh-panel__input filter-panel__input',
+              }}
+              startContent={
+                <span className="filter-panel__field-icon morphic-input-icon" aria-hidden="true">
+                  <Search className="morphic-icon" size={18} strokeWidth={2} />
+                </span>
+              }
+              endContent={
+                localOptions.searchQuery ? (
+                  <Button
+                    type="button"
+                    className="filter-panel__icon-btn morphic-input-action"
+                    aria-label="Clear search"
+                    onPress={() => handleChange('searchQuery', '')}
+                  >
+                    <X className="morphic-icon" size={18} strokeWidth={2} aria-hidden="true" />
+                  </Button>
+                ) : null
+              }
             />
-            <div className="filter-panel__field-icon morphic-input-icon">
-              <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
-            </div>
-            {localOptions.searchQuery && (
-              <button
-                onClick={() => handleChange('searchQuery', '')}
-                className="filter-panel__icon-btn morphic-input-action"
-                aria-label="Clear search"
-                type="button"
-              >
-                <X className="h-5 w-5" aria-hidden="true" />
-              </button>
-            )}
           </div>
         </div>
-      </div>
 
-      <div className="auto-refresh-panel__section filter-panel__section">
         {/* Show only active items */}
-        <label className="filter-panel__toggle" htmlFor="onlyActive">
-          <input
-            type="checkbox"
-            id="onlyActive"
-            checked={localOptions.onlyShowActive}
-            onChange={(e) => handleChange('onlyShowActive', e.target.checked)}
-            className="filter-panel__checkbox"
-          />
-          <span className="filter-panel__check" aria-hidden="true" />
-          <span className="filter-panel__toggle-label">
-            Show only active tasks
-          </span>
-        </label>
-      </div>
-
-      <div className="auto-refresh-panel__section filter-panel__section">
-        {/* Filter badge display */}
-        {(localOptions.statusFilter !== 'all' ||
-          localOptions.searchQuery.trim() ||
-          localOptions.onlyShowActive) && (
-          <div className="filter-panel__badges">
-            <div className="filter-panel__badges-label">Active filters:</div>
-
-            {localOptions.statusFilter !== 'all' && (
-              <span className="filter-panel__chip filter-panel__chip--blue">
-                {(() => {
-                  const Icon =
-                    STATUS_ICONS[localOptions.statusFilter as CommitStatus]
-                  return (
-                    <Icon className="morphic-icon" size={14} strokeWidth={2} />
-                  )
-                })()}
-                <span className="filter-panel__chip-text">
-                  {STATUS_LABELS[localOptions.statusFilter as CommitStatus]}
-                </span>
-                <button
-                  onClick={() => handleChange('statusFilter', 'all')}
-                  className="filter-panel__chip-close"
-                  aria-label="Clear status filter"
-                  type="button"
-                >
-                  <X size={14} strokeWidth={2} aria-hidden="true" />
-                </button>
-              </span>
-            )}
-
-            {localOptions.searchQuery.trim() && (
-              <span className="filter-panel__chip filter-panel__chip--green">
-                <Search
-                  className="morphic-icon"
-                  size={14}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                />
-                <span className="filter-panel__chip-text">
-                  {localOptions.searchQuery}
-                </span>
-                <button
-                  onClick={() => handleChange('searchQuery', '')}
-                  className="filter-panel__chip-close"
-                  aria-label="Clear search filter"
-                  type="button"
-                >
-                  <X size={14} strokeWidth={2} aria-hidden="true" />
-                </button>
-              </span>
-            )}
-
-            {localOptions.onlyShowActive && (
-              <span className="filter-panel__chip filter-panel__chip--yellow">
-                <RefreshCw
-                  className="morphic-icon"
-                  size={14}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                />
-                <span className="filter-panel__chip-text">Active Only</span>
-                <button
-                  onClick={() => handleChange('onlyShowActive', false)}
-                  className="filter-panel__chip-close"
-                  aria-label="Clear active-only filter"
-                  type="button"
-                >
-                  <X size={14} strokeWidth={2} aria-hidden="true" />
-                </button>
-              </span>
-            )}
+        <div className="auto-refresh-panel__section filter-panel__section">
+          <div className="filter-panel__toggle">
+            <Switch
+              isSelected={localOptions.onlyShowActive}
+              onValueChange={(value) => handleChange('onlyShowActive', value)}
+            >
+              Show only active tasks
+            </Switch>
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="auto-refresh-panel__footer">
-        <button
-          onClick={handleReset}
-          className="morphic-btn filter-panel__reset"
-          type="button"
-        >
-          <RotateCcw
-            className="morphic-icon"
-            size={16}
-            strokeWidth={2}
-            aria-hidden="true"
-          />
-          Reset
-        </button>
-      </div>
-    </div>
+        {/* Active filters */}
+        <div className="auto-refresh-panel__section filter-panel__section">{renderActiveFilters()}</div>
+
+        <div className="auto-refresh-panel__footer">
+          <Button
+            onPress={handleReset}
+            className="morphic-btn filter-panel__reset"
+            type="button"
+            startContent={<RotateCcw className="morphic-icon" size={16} strokeWidth={2} aria-hidden="true" />}
+          >
+            Reset
+          </Button>
+        </div>
+      </CardBody>
+    </Card>
   )
 }
