@@ -315,54 +315,68 @@ export const registerAuth = (app: express.Express): void => {
       return
     }
 
-    passport.authenticate(providerId, (err: unknown, user: Express.User | false) => {
-      if (err || !user) {
-        res.redirect(
-          buildUiRedirectUrl(req, process.env.UI_AUTH_FAILURE_PATH ?? '/login', {
-            error: String(err ?? 'Authentication failed'),
-          }),
-        )
-        return
-      }
-
-      req.logIn(user, async (loginErr) => {
-        if (loginErr) {
+    passport.authenticate(
+      providerId,
+      (err: unknown, user: Express.User | false) => {
+        if (err || !user) {
           res.redirect(
             buildUiRedirectUrl(
               req,
               process.env.UI_AUTH_FAILURE_PATH ?? '/login',
               {
-                error: String(loginErr),
+                error: String(err ?? 'Authentication failed'),
               },
             ),
           )
           return
         }
 
-        try {
-          const handle = createDatabase()
-          try {
-            await provisionUserAndDefaultWorkspace(handle.db, {
-              providerId,
-              claims: user as { sub?: string; email?: string },
-            })
-          } finally {
-            await destroyDatabase(handle)
+        req.logIn(user, async (loginErr) => {
+          if (loginErr) {
+            res.redirect(
+              buildUiRedirectUrl(
+                req,
+                process.env.UI_AUTH_FAILURE_PATH ?? '/login',
+                {
+                  error: String(loginErr),
+                },
+              ),
+            )
+            return
           }
 
-          res.redirect(successRedirect)
-        } catch (provisionErr) {
-          res.redirect(
-            buildUiRedirectUrl(
-              req,
-              process.env.UI_AUTH_FAILURE_PATH ?? '/login',
-              {
-                error: String(provisionErr),
-              },
-            ),
-          )
-        }
-      })
-    })(req, res, next)
+          try {
+            const handle = createDatabase()
+            try {
+              const { userId } = await provisionUserAndDefaultWorkspace(
+                handle.db,
+                {
+                  providerId,
+                  claims: user as { sub?: string; email?: string },
+                },
+              )
+
+              if (req.session) {
+                req.session.userId = userId
+              }
+            } finally {
+              await destroyDatabase(handle)
+            }
+
+            res.redirect(successRedirect)
+          } catch (provisionErr) {
+            res.redirect(
+              buildUiRedirectUrl(
+                req,
+                process.env.UI_AUTH_FAILURE_PATH ?? '/login',
+                {
+                  error: String(provisionErr),
+                },
+              ),
+            )
+          }
+        })
+      },
+    )(req, res, next)
   })
 }
