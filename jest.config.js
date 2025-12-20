@@ -10,4 +10,4 @@ export default {
   collectCoverage: true,
   collectCoverageFrom: ['src/**/*.js', '!src/tests/**'],
   transformIgnorePatterns: [],
-}; 
+}

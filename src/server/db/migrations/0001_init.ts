@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import type { Kysely } from 'kysely'
 
 export const up = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
@@ -7,9 +7,9 @@ export const up = async (db: Kysely<unknown>): Promise<void> => {
     .addColumn('email', 'text', (col) => col.notNull())
     .addColumn('created_at', 'text', (col) => col.notNull())
     .addColumn('updated_at', 'text', (col) => col.notNull())
-    .execute();
-};
+    .execute()
+}
 
 export const down = async (db: Kysely<unknown>): Promise<void> => {
-  await db.schema.dropTable('users').execute();
-};
+  await db.schema.dropTable('users').execute()
+}
