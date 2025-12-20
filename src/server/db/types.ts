@@ -30,8 +30,20 @@ export interface WorkspaceMembersTable {
   updated_at: Timestamp
 }
 
+export interface WorkspaceInvitesTable {
+  id: string
+  workspace_id: string
+  created_by_user_id: string
+  role: string
+  token_hash: string
+  expires_at: Timestamp
+  used_at: Timestamp | null
+  created_at: Timestamp
+}
+
 export interface DB {
   users: UsersTable
   workspaces: WorkspacesTable
   workspace_members: WorkspaceMembersTable
+  workspace_invites: WorkspaceInvitesTable
 }

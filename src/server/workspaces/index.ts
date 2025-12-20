@@ -15,6 +15,15 @@ type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer'
 
 const nowIso = (): string => new Date().toISOString()
 
+const sha256Hex = (value: string): string => {
+  return crypto.createHash('sha256').update(value).digest('hex')
+}
+
+const addDaysIso = (date: Date, days: number): string => {
+  const ms = days * 24 * 60 * 60 * 1000
+  return new Date(date.getTime() + ms).toISOString()
+}
+
 const getAuthenticatedUserId = (req: express.Request): string | undefined => {
   if (process.env.NODE_ENV === 'test') {
     const testUserId = req.get('x-test-user-id')
@@ -266,6 +275,122 @@ export const createWorkspacesRouter = (): Router => {
       }
     },
   )
+
+  router.post('/workspaces/:workspaceId/invites', async (req, res) => {
+    const userId = requireUserId(req, res)
+    if (!userId) return
+
+    const workspaceId = String(req.params.workspaceId ?? '').trim()
+    if (!workspaceId) {
+      res.status(400).json({ error: 'Missing workspaceId' })
+      return
+    }
+
+    const handle = createDatabase()
+
+    try {
+      const membership = await handle.db
+        .selectFrom('workspace_members')
+        .select(['role'])
+        .where('workspace_id', '=', workspaceId)
+        .where('user_id', '=', userId)
+        .executeTakeFirst()
+
+      if (!membership || membership.role !== 'owner') {
+        res.status(403).json({ error: 'Forbidden' })
+        return
+      }
+
+      const token = crypto.randomBytes(24).toString('base64url')
+      const tokenHash = sha256Hex(token)
+
+      const now = nowIso()
+      const expiresAt = addDaysIso(new Date(), 7)
+      const inviteId = crypto.randomBytes(16).toString('base64url')
+
+      await handle.db
+        .insertInto('workspace_invites')
+        .values({
+          id: inviteId,
+          workspace_id: workspaceId,
+          created_by_user_id: userId,
+          role: 'viewer',
+          token_hash: tokenHash,
+          expires_at: expiresAt,
+          used_at: null,
+          created_at: now,
+        })
+        .execute()
+
+      res.status(201).json({ token, expiresAt, role: 'viewer' })
+    } finally {
+      await destroyDatabase(handle)
+    }
+  })
+
+  router.post('/invites/accept', async (req, res) => {
+    const userId = requireUserId(req, res)
+    if (!userId) return
+
+    const token = String(req.body?.token ?? '').trim()
+    if (!token) {
+      res.status(400).json({ error: 'Missing token' })
+      return
+    }
+
+    const tokenHash = sha256Hex(token)
+
+    const handle = createDatabase()
+
+    try {
+      const invite = await handle.db
+        .selectFrom('workspace_invites')
+        .select(['id', 'workspace_id', 'role', 'expires_at', 'used_at'])
+        .where('token_hash', '=', tokenHash)
+        .executeTakeFirst()
+
+      if (!invite) {
+        res.status(404).json({ error: 'Invite not found' })
+        return
+      }
+
+      if (invite.used_at) {
+        res.status(400).json({ error: 'Invite already used' })
+        return
+      }
+
+      const nowDate = new Date()
+      const expiresDate = new Date(invite.expires_at)
+      if (Number.isNaN(expiresDate.getTime()) || expiresDate <= nowDate) {
+        res.status(400).json({ error: 'Invite expired' })
+        return
+      }
+
+      const now = nowIso()
+
+      await handle.db
+        .insertInto('workspace_members')
+        .values({
+          workspace_id: invite.workspace_id,
+          user_id: userId,
+          role: invite.role,
+          created_at: now,
+          updated_at: now,
+        })
+        .onConflict((oc) => oc.columns(['workspace_id', 'user_id']).doNothing())
+        .execute()
+
+      await handle.db
+        .updateTable('workspace_invites')
+        .set({ used_at: now })
+        .where('id', '=', invite.id)
+        .execute()
+
+      res.status(200).json({ ok: true, workspaceId: invite.workspace_id })
+    } finally {
+      await destroyDatabase(handle)
+    }
+  })
 
   return router
 }
