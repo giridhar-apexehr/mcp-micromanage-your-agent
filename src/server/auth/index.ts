@@ -8,6 +8,9 @@ import type express from 'express'
 import session from 'express-session'
 import passport from 'passport'
 
+import { createDatabase, destroyDatabase } from '../db/index.js'
+import { provisionUserAndDefaultWorkspace } from './provision.js'
+
 type UserClaims = {
   sub?: string
   email?: string
@@ -300,23 +303,66 @@ export const registerAuth = (app: express.Express): void => {
       req,
       process.env.UI_AUTH_SUCCESS_PATH ?? '/',
     )
-    const failureRedirect = buildUiRedirectUrl(
-      req,
-      process.env.UI_AUTH_FAILURE_PATH ?? '/login',
-    )
 
     try {
       await ensureStrategy(providerId, req)
-      passport.authenticate(providerId, {
-        successRedirect,
-        failureRedirect,
-      })(req, res, next)
     } catch (error) {
       res.redirect(
         buildUiRedirectUrl(req, process.env.UI_AUTH_FAILURE_PATH ?? '/login', {
           error: String(error),
         }),
       )
+      return
     }
+
+    passport.authenticate(providerId, (err: unknown, user: Express.User | false) => {
+      if (err || !user) {
+        res.redirect(
+          buildUiRedirectUrl(req, process.env.UI_AUTH_FAILURE_PATH ?? '/login', {
+            error: String(err ?? 'Authentication failed'),
+          }),
+        )
+        return
+      }
+
+      req.logIn(user, async (loginErr) => {
+        if (loginErr) {
+          res.redirect(
+            buildUiRedirectUrl(
+              req,
+              process.env.UI_AUTH_FAILURE_PATH ?? '/login',
+              {
+                error: String(loginErr),
+              },
+            ),
+          )
+          return
+        }
+
+        try {
+          const handle = createDatabase()
+          try {
+            await provisionUserAndDefaultWorkspace(handle.db, {
+              providerId,
+              claims: user as { sub?: string; email?: string },
+            })
+          } finally {
+            await destroyDatabase(handle)
+          }
+
+          res.redirect(successRedirect)
+        } catch (provisionErr) {
+          res.redirect(
+            buildUiRedirectUrl(
+              req,
+              process.env.UI_AUTH_FAILURE_PATH ?? '/login',
+              {
+                error: String(provisionErr),
+              },
+            ),
+          )
+        }
+      })
+    })(req, res, next)
   })
 }
