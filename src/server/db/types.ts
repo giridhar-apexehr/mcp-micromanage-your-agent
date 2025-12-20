@@ -41,9 +41,21 @@ export interface WorkspaceInvitesTable {
   created_at: Timestamp
 }
 
+export interface UserPatsTable {
+  id: string
+  user_id: string
+  workspace_id: string | null
+  name: string
+  secret_hash: string
+  created_at: Timestamp
+  last_used_at: Timestamp | null
+  revoked_at: Timestamp | null
+}
+
 export interface DB {
   users: UsersTable
   workspaces: WorkspacesTable
   workspace_members: WorkspaceMembersTable
   workspace_invites: WorkspaceInvitesTable
+  user_pats: UserPatsTable
 }
