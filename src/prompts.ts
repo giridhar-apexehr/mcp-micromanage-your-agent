@@ -1,9 +1,9 @@
-interface RequestExtra {
-  readonly context?: {
-    [key: string]: unknown;
-  };
-  readonly [key: string]: unknown;
-}
+// interface RequestExtra {
+//   readonly context?: {
+//     [key: string]: unknown;
+//   };
+//   readonly [key: string]: unknown;
+// }
 
 // hope that the cursor supports the prompt as an mcp client
 // alternative, you can include this in your .mdc

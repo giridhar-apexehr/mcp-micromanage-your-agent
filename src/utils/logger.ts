@@ -25,25 +25,25 @@ function getTimestamp(): string {
   return `[${now.toISOString().replace('T', ' ').substring(0, 19)}]`;
 }
 
-export function debug(message: string, ...args: any[]): void {
+export function debug(message: string, ...args: unknown[]): void {
   if (currentLogLevel <= LogLevel.DEBUG) {
     console.error(`${getTimestamp()} ${chalk.blue('DEBUG')} ${message}`, ...args);
   }
 }
 
-export function info(message: string, ...args: any[]): void {
+export function info(message: string, ...args: unknown[]): void {
   if (currentLogLevel <= LogLevel.INFO) {
     console.error(`${getTimestamp()} ${chalk.green('INFO')} ${message}`, ...args);
   }
 }
 
-export function warn(message: string, ...args: any[]): void {
+export function warn(message: string, ...args: unknown[]): void {
   if (currentLogLevel <= LogLevel.WARN) {
     console.warn(`${getTimestamp()} ${chalk.yellow('WARN')} ${message}`, ...args);
   }
 }
 
-export function error(message: string, ...args: any[]): void {
+export function error(message: string, ...args: unknown[]): void {
   if (currentLogLevel <= LogLevel.ERROR) {
     console.error(`${getTimestamp()} ${chalk.red('ERROR')} ${message}`, ...args);
   }

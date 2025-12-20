@@ -1,6 +1,6 @@
 import type { Kysely } from 'kysely';
 
-export const up = async (db: Kysely<any>): Promise<void> => {
+export const up = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema
     .createTable('users')
     .addColumn('id', 'text', (col) => col.primaryKey())
@@ -10,6 +10,6 @@ export const up = async (db: Kysely<any>): Promise<void> => {
     .execute();
 };
 
-export const down = async (db: Kysely<any>): Promise<void> => {
+export const down = async (db: Kysely<unknown>): Promise<void> => {
   await db.schema.dropTable('users').execute();
 };

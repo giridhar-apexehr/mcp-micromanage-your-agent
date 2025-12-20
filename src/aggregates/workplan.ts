@@ -486,7 +486,7 @@ export class WorkPlan {
         };
 
         // Remove implicit "default" workplan key if present
-        if (Object.prototype.hasOwnProperty.call(migratedAgentState.workplans, 'default')) {
+        if (Object.hasOwn(migratedAgentState.workplans, 'default')) {
           const migratedId = createMigratedWorkplanId('default');
           const defaultTicket = migratedAgentState.workplans['default'];
           delete migratedAgentState.workplans['default'];
