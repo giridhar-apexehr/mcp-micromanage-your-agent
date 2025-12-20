@@ -14,6 +14,15 @@ export interface UsersTable {
   updated_at: Timestamp
 }
 
+export interface WorkspacesTable {
+  id: string
+  owner_user_id: string
+  name: string
+  created_at: Generated<Timestamp>
+  updated_at: Timestamp
+}
+
 export interface DB {
   users: UsersTable
+  workspaces: WorkspacesTable
 }
