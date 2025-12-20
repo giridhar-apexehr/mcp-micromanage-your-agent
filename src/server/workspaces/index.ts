@@ -126,6 +126,17 @@ const requireWorkspaceRole = async (
 export const createWorkspacesRouter = (): Router => {
   const router = Router()
 
+  router.use('/workspaces/:workspaceId', (req, res, next) => {
+    const workspaceId = String(req.params.workspaceId ?? '').trim()
+    if (!workspaceId) {
+      res.status(400).json({ error: 'Missing workspaceId' })
+      return
+    }
+
+    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
+    next()
+  })
+
   router.get('/workspaces', async (req, res) => {
     const userId = requireUserId(req, res)
     if (!userId) return
@@ -223,8 +234,6 @@ export const createWorkspacesRouter = (): Router => {
       return
     }
 
-    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
-
     const handle = createDatabase()
 
     try {
@@ -266,8 +275,6 @@ export const createWorkspacesRouter = (): Router => {
       res.status(400).json({ error: 'Missing workspaceId' })
       return
     }
-
-    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
 
     const targetUserId = String(req.body?.userId ?? '').trim()
     if (!targetUserId) {
@@ -339,8 +346,6 @@ export const createWorkspacesRouter = (): Router => {
         return
       }
 
-      if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
-
       const handle = createDatabase()
 
       try {
@@ -377,8 +382,6 @@ export const createWorkspacesRouter = (): Router => {
       res.status(400).json({ error: 'Missing workspaceId' })
       return
     }
-
-    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
 
     const handle = createDatabase()
 
