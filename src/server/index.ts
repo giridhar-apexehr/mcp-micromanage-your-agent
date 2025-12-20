@@ -5,6 +5,7 @@ import http from 'http';
 import logger from '../utils/logger.js';
 import { loadHttpServerConfig } from './config.js';
 import { createApp } from './app.js';
+import { migrateToLatest } from './db/migrator.js';
 
 const config = loadHttpServerConfig();
 logger.setLogLevel(config.logLevel);
@@ -12,10 +13,6 @@ logger.info(`HTTP logger initialized with level: ${config.logLevel}`);
 
 const app = createApp(config);
 const server = http.createServer(app);
-
-server.listen(config.port, config.host, () => {
-  logger.info(`HTTP server listening on http://${config.host}:${config.port}`);
-});
 
 const shutdown = (signal: string): void => {
   logger.info(`Received ${signal}, shutting down HTTP server...`);
@@ -32,3 +29,18 @@ const shutdown = (signal: string): void => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+const run = async (): Promise<void> => {
+  try {
+    await migrateToLatest();
+
+    server.listen(config.port, config.host, () => {
+      logger.info(`HTTP server listening on http://${config.host}:${config.port}`);
+    });
+  } catch (error) {
+    logger.logError('HTTP server startup failed', error);
+    process.exit(1);
+  }
+};
+
+void run();
