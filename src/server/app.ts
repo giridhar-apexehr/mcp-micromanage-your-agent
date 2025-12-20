@@ -9,6 +9,7 @@ import type { HttpServerConfig } from './config.js'
 import { createDatabase, destroyDatabase } from './db/index.js'
 import { registerAuth } from './auth/index.js'
 import { registerCsrf } from './csrf/index.js'
+import { registerWorkspaces } from './workspaces/register.js'
 
 export const createApp = (config: HttpServerConfig): express.Express => {
   const app = express()
@@ -18,6 +19,7 @@ export const createApp = (config: HttpServerConfig): express.Express => {
 
   registerAuth(app)
   registerCsrf(app)
+  registerWorkspaces(app)
 
   app.get('/', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' })

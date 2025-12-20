@@ -22,7 +22,16 @@ export interface WorkspacesTable {
   updated_at: Timestamp
 }
 
+export interface WorkspaceMembersTable {
+  workspace_id: string
+  user_id: string
+  role: string
+  created_at: Generated<Timestamp>
+  updated_at: Timestamp
+}
+
 export interface DB {
   users: UsersTable
   workspaces: WorkspacesTable
+  workspace_members: WorkspaceMembersTable
 }

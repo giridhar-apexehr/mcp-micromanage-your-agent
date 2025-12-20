@@ -65,6 +65,18 @@ export const provisionUserAndDefaultWorkspace = async (
     .executeTakeFirst()
 
   if (existingWorkspace) {
+    await db
+      .insertInto('workspace_members')
+      .values({
+        workspace_id: existingWorkspace.id,
+        user_id: userId,
+        role: 'owner',
+        created_at: now,
+        updated_at: now,
+      })
+      .onConflict((oc) => oc.columns(['workspace_id', 'user_id']).doNothing())
+      .execute()
+
     return { userId, workspaceId: existingWorkspace.id }
   }
 
@@ -79,6 +91,18 @@ export const provisionUserAndDefaultWorkspace = async (
       created_at: now,
       updated_at: now,
     })
+    .execute()
+
+  await db
+    .insertInto('workspace_members')
+    .values({
+      workspace_id: workspaceId,
+      user_id: userId,
+      role: 'owner',
+      created_at: now,
+      updated_at: now,
+    })
+    .onConflict((oc) => oc.columns(['workspace_id', 'user_id']).doNothing())
     .execute()
 
   return { userId, workspaceId }
