@@ -1,22 +1,23 @@
-interface RequestExtra {
-  readonly context?: {
-    [key: string]: unknown;
-  };
-  readonly [key: string]: unknown;
-}
+// interface RequestExtra {
+//   readonly context?: {
+//     [key: string]: unknown;
+//   };
+//   readonly [key: string]: unknown;
+// }
 
 // hope that the cursor supports the prompt as an mcp client
 // alternative, you can include this in your .mdc
 export const taskPlanningGuide = {
-  name: "task-planning-guide",
-  description: "A comprehensive guide for planning development tasks with minimal PRs and commits. Helps structure work before using the plan tool.",
+  name: 'task-planning-guide',
+  description:
+    'A comprehensive guide for planning development tasks with minimal PRs and commits. Helps structure work before using the plan tool.',
   handler: () => ({
-    description: "Task planning guide for minimal PRs and commits",
+    description: 'Task planning guide for minimal PRs and commits',
     messages: [
       {
-        role: "user" as const,
+        role: 'user' as const,
         content: {
-          type: "text" as const,
+          type: 'text' as const,
           text: `
 # Task Planning Guide
 
@@ -58,18 +59,18 @@ export const taskPlanningGuide = {
 
 ## Prohibited Actions
 - **Any implementation or code writing, even "example code"**
-          `
-        }
-      }
-    ]
-  })
-};
-
+          `,
+        },
+      },
+    ],
+  }),
+}
 
 // internal prompt
 export const progressInstructionGuide = {
-  name: "progressInstructionGuide",
-  description: "Based on this progress report, analyze the current state and suggest the next commit to work on.",
+  name: 'progressInstructionGuide',
+  description:
+    'Based on this progress report, analyze the current state and suggest the next commit to work on.',
   text: `
 Based on this progress report, analyze the current state and suggest the next commit to work on.
 **Next, you must strictly follow these procedures without exception**:
@@ -98,12 +99,13 @@ When setting a task status to "user_review":
 - Use your agent name as \`agentId\`, and use a kebab-cased \`workplanId\` that you reuse for the current ticket/thread.
 
 **Always secure the user's agreement before starting the next task.**
-`};
+`,
+}
 
 // alternative, you can include this in your .mdc
-export const updateTaskStatusRule= {
-  name: "update-task-status-rule",
-  description: "Always When updating the status of a task",
+export const updateTaskStatusRule = {
+  name: 'update-task-status-rule',
+  description: 'Always When updating the status of a task',
   text: `
 **STRICT RULES - MUST BE FOLLOWED WITHOUT EXCEPTION:**
 
@@ -126,12 +128,13 @@ user_review → in_progress conditions:
 * → cancelled conditions:
 ✅ There is a clear reason why the task is no longer needed, or alternative methods or solutions to meet the requirements are clear
 ✅ The impact of cancellation on other related tasks has been evaluated
-`};
+`,
+}
 
 // alternative, you can include this in your .mdc
-export const solutionExplorationGuide= {
-  name: "solution-exploration-guide",
-  description: "When examining how to implement an issue",
+export const solutionExplorationGuide = {
+  name: 'solution-exploration-guide',
+  description: 'When examining how to implement an issue',
   text: `
 ## Purpose
 - nformation gathering and Brainstorming potential approaches
@@ -150,4 +153,5 @@ export const solutionExplorationGuide= {
 - Understand the issue from the given information and existing code
 - research and interviews with users to ensure that we have all the information we need to complete the task
 - Analyze potential impacts to the existing codebase
-`};
+`,
+}
