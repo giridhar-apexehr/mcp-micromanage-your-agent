@@ -8,14 +8,16 @@ import logger from '../utils/logger.js'
 import type { HttpServerConfig } from './config.js'
 import { createDatabase, destroyDatabase } from './db/index.js'
 import { registerAuth } from './auth/index.js'
+import { registerCsrf } from './csrf/index.js'
 
 export const createApp = (config: HttpServerConfig): express.Express => {
   const app = express()
 
   app.use(express.json({ limit: '1mb' }))
-  app.use(cors({ origin: config.corsOrigin }))
+  app.use(cors({ origin: config.corsOrigin, credentials: true }))
 
   registerAuth(app)
+  registerCsrf(app)
 
   app.get('/', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' })
