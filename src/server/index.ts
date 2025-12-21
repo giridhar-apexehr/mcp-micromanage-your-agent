@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import 'dotenv/config'
 import http from 'http'
 
 import logger from '../utils/logger.js'
