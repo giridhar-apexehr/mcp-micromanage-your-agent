@@ -160,6 +160,14 @@ describe('pat auth', () => {
         const address = await listen(server)
         const baseUrl = `http://${address.address}:${address.port}`
 
+        const invalidSecret = crypto.randomBytes(32).toString('base64url')
+        const invalidRes = await fetch(`${baseUrl}/api/workspaces`, {
+          headers: {
+            authorization: `Bearer ${invalidSecret}`,
+          },
+        })
+        expect(invalidRes.status).toBe(401)
+
         const listRes = await fetch(`${baseUrl}/api/workspaces`, {
           headers: {
             authorization: `Bearer ${globalSecret}`,
@@ -209,6 +217,54 @@ describe('pat auth', () => {
           },
         )
         expect(boundMismatchRes.status).toBe(403)
+
+        const boundAllowedRes = await fetch(
+          `${baseUrl}/api/workspaces/${workspaceId}/members`,
+          {
+            headers: {
+              authorization: `Bearer ${boundSecret}`,
+            },
+          },
+        )
+        expect(boundAllowedRes.status).toBe(200)
+
+        const createWorkspaceRes = await fetch(`${baseUrl}/api/workspaces`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${globalSecret}`,
+          },
+          body: JSON.stringify({ name: 'New Workspace' }),
+        })
+        expect(createWorkspaceRes.status).toBe(403)
+
+        const mismatchInviteRes = await fetch(
+          `${baseUrl}/api/workspaces/${otherWorkspaceId}/invites`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              authorization: `Bearer ${globalSecret}`,
+            },
+            body: JSON.stringify({}),
+          },
+        )
+        expect(mismatchInviteRes.status).toBe(201)
+        const mismatchInviteBody = await mismatchInviteRes.json()
+        expect(typeof mismatchInviteBody.token).toBe('string')
+
+        const acceptMismatchInviteRes = await fetch(
+          `${baseUrl}/api/invites/accept`,
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              authorization: `Bearer ${boundSecret}`,
+            },
+            body: JSON.stringify({ token: mismatchInviteBody.token }),
+          },
+        )
+        expect(acceptMismatchInviteRes.status).toBe(403)
       } finally {
         await new Promise((resolve) => server.close(resolve))
       }

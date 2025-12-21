@@ -179,6 +179,11 @@ export const createWorkspacesRouter = (): Router => {
     const userId = requireUserId(req, res)
     if (!userId) return
 
+    if (req.auth?.type === 'pat') {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+
     const patWorkspaceId = getPatWorkspaceId(req)
     if (patWorkspaceId && typeof patWorkspaceId === 'string') {
       res.status(403).json({ error: 'Forbidden' })
