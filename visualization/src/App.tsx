@@ -3,6 +3,7 @@ import { FilterPanel } from './components/panels/FilterPanel'
 import type { FilterOptions } from './components/panels/FilterPanel.types'
 import { OrientationWarning } from './components/OrientationWarning'
 import { useThemeMode } from './app/hooks/useThemeMode'
+import { useAuthStatus } from './app/hooks/useAuthStatus'
 import { useWorkplanData } from './app/hooks/useWorkplanData'
 import { usePolling } from './app/hooks/usePolling'
 import { useFloatingPanel } from './app/hooks/useFloatingPanel'
@@ -11,10 +12,12 @@ import { WorkplanPage } from './pages/WorkplanPage'
 import { WorkplanTopbar } from './components/workplan/WorkplanTopbar'
 import { WorkplanActionsBar } from './components/workplan/WorkplanActionsBar'
 import { ErrorOverlay } from './components/common/ErrorOverlay'
+import { LoginOverlay } from './components/common/LoginOverlay'
 import { AutoRefreshPanel } from './components/panels/AutoRefreshPanel'
 import './App.css'
 
 function App() {
+  const auth = useAuthStatus()
   const {
     workplan,
     workplanCatalog,
@@ -24,7 +27,7 @@ function App() {
     loadData,
     openWorkplan,
     goToDashboard: goToDashboardBase,
-  } = useWorkplanData()
+  } = useWorkplanData(auth.isAuthenticated)
   const {
     pollingEnabled,
     togglePolling,
@@ -92,6 +95,16 @@ function App() {
   }, [autoRefreshPanel])
 
   const AUTO_REFRESH_PRESETS_SECONDS = [1, 2, 5, 10, 30, 60]
+
+  if (!auth.isAuthenticated) {
+    return (
+      <LoginOverlay
+        providers={auth.providers}
+        error={auth.error}
+        onRetry={auth.refresh}
+      />
+    )
+  }
 
   // Fallback display for errors
   if (loadError) {

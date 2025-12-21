@@ -79,7 +79,7 @@ const resolveTicketFromLegacyPayload = (
 /**
  * Loads and normalizes workplan data and selection state.
  */
-export const useWorkplanData = (): UseWorkplanDataResult => {
+export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
   const [workplan, setWorkplan] = useState<WorkPlan | null>(null)
   const [workplanCatalog, setWorkplanCatalog] =
     useState<WorkplanCatalog | null>(null)
@@ -90,6 +90,7 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
   const isLoadingRef = useRef<boolean>(false)
 
   const loadData = useCallback(async () => {
+    if (!enabled) return
     if (isLoadingRef.current) return
 
     isLoadingRef.current = true
@@ -298,7 +299,7 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
       isLoadingRef.current = false
       setIsLoading(false)
     }
-  }, [])
+  }, [enabled])
 
   const openWorkplan = useCallback(
     (agentId: string, workplanId: string) => {
@@ -320,6 +321,13 @@ export const useWorkplanData = (): UseWorkplanDataResult => {
   }, [loadData])
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      isLoadingRef.current = false
+      setLoadError(null)
+      return
+    }
+
     loadData()
   }, [loadData])
 
