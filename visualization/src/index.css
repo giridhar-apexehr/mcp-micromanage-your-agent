@@ -3,6 +3,7 @@
 @import "./theme/base.css";
 @import "./theme/primitives.css";
 @import "./theme/topbar.css";
+@config "../tailwind.config.cjs";
 
 @media (prefers-color-scheme: light) {
   :root {
