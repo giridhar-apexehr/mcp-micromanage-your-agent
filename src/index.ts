@@ -32,10 +32,10 @@ const workPlanOptions: WorkPlanInitOptions = {
   legacyWriterEnabled: false,
 }
 
-const proxyConfig = loadMcpProxyConfig()
-if (proxyConfig.mode === 'remote') {
+export const mcpProxyConfig = loadMcpProxyConfig()
+if (mcpProxyConfig.mode === 'remote') {
   logger.info(
-    `MCP proxy config detected (remote): serverBaseUrl=${proxyConfig.serverBaseUrl}`,
+    `MCP proxy config detected (remote): serverBaseUrl=${mcpProxyConfig.serverBaseUrl}`,
   )
 } else {
   logger.info('MCP proxy config: local mode')

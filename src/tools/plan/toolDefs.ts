@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool, createErrorResponse, PlanTaskInput } from '../common.js'
-import { workPlan } from '../../index.js'
+import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
 
@@ -119,6 +119,54 @@ export const PLAN_TOOL: Tool<{
       logger.info(
         `Plan tool called with goal: ${params.goal}, PRs: ${params.prPlans.length}`,
       )
+
+      if (mcpProxyConfig.mode === 'remote') {
+        const url = new URL(
+          `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/plan`,
+          mcpProxyConfig.serverBaseUrl,
+        )
+
+        const planParams: PlanTaskInput = {
+          goal: params.goal,
+          prPlans: params.prPlans.map((pr) => ({
+            goal: pr.goal,
+            commitPlans: pr.commitPlans.map((commit) => ({
+              goal: commit.goal,
+              developerNote: commit.developerNote
+                ? String(commit.developerNote)
+                : undefined,
+            })),
+            developerNote: pr.developerNote
+              ? String(pr.developerNote)
+              : undefined,
+          })),
+          needsMoreThoughts: params.needsMoreThoughts,
+        }
+
+        const res = await fetch(url.toString(), {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${mcpProxyConfig.apiKey}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(planParams),
+        })
+
+        const bodyText = await res.text()
+        let body: unknown = bodyText
+        try {
+          body = JSON.parse(bodyText)
+        } catch {
+          body = bodyText
+        }
+
+        return {
+          content: [
+            { type: 'text' as const, text: JSON.stringify(body, null, 2) },
+          ],
+          isError: res.status >= 400,
+        }
+      }
 
       if (!workPlan) {
         logger.error('WorkPlan instance is not available')

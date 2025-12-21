@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool, createErrorResponse, InsertCommitInput } from '../common.js'
-import { workPlan } from '../../index.js'
+import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
 
@@ -70,6 +70,46 @@ export const INSERT_COMMIT_TOOL: Tool<{
       logger.info(
         `InsertCommit tool called for PR #${params.prIndex} after commit #${params.insertAfterCommitIndex}`,
       )
+
+      if (mcpProxyConfig.mode === 'remote') {
+        const url = new URL(
+          `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/insert-commit`,
+          mcpProxyConfig.serverBaseUrl,
+        )
+
+        const payload: InsertCommitInput = {
+          prIndex: params.prIndex,
+          insertAfterCommitIndex: params.insertAfterCommitIndex,
+          goal: params.goal,
+          developerNote: params.developerNote
+            ? String(params.developerNote)
+            : undefined,
+        }
+
+        const res = await fetch(url.toString(), {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${mcpProxyConfig.apiKey}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+
+        const bodyText = await res.text()
+        let body: unknown = bodyText
+        try {
+          body = JSON.parse(bodyText)
+        } catch {
+          body = bodyText
+        }
+
+        return {
+          content: [
+            { type: 'text' as const, text: JSON.stringify(body, null, 2) },
+          ],
+          isError: res.status >= 400,
+        }
+      }
 
       if (!workPlan) {
         logger.error('WorkPlan instance is not available')

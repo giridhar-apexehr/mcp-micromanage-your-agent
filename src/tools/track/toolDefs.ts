@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool, createErrorResponse } from '../common.js'
-import { workPlan } from '../../index.js'
+import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
 
@@ -52,6 +52,37 @@ export const TRACK_TOOL: Tool<{
   handler: async (params, extra: RequestHandlerExtra) => {
     try {
       logger.info('Track tool called')
+
+      if (mcpProxyConfig.mode === 'remote') {
+        const url = new URL(
+          `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/track`,
+          mcpProxyConfig.serverBaseUrl,
+        )
+        if (params.prIndex !== undefined) {
+          url.searchParams.set('prIndex', String(params.prIndex))
+        }
+
+        const res = await fetch(url.toString(), {
+          headers: {
+            authorization: `Bearer ${mcpProxyConfig.apiKey}`,
+          },
+        })
+
+        const bodyText = await res.text()
+        let body: unknown = bodyText
+        try {
+          body = JSON.parse(bodyText)
+        } catch {
+          body = bodyText
+        }
+
+        return {
+          content: [
+            { type: 'text' as const, text: JSON.stringify(body, null, 2) },
+          ],
+          isError: res.status >= 400,
+        }
+      }
 
       if (!workPlan) {
         logger.error('WorkPlan instance is not available')
