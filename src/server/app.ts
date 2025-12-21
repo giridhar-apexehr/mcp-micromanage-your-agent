@@ -12,6 +12,7 @@ import { registerPatAuth } from './auth/patAuth.js'
 import { registerCsrf } from './csrf/index.js'
 import { registerWorkspaces } from './workspaces/register.js'
 import { registerPats } from './pats/register.js'
+import { registerWorkplans } from './workplans/register.js'
 
 export const createApp = (config: HttpServerConfig): express.Express => {
   const app = express()
@@ -24,6 +25,7 @@ export const createApp = (config: HttpServerConfig): express.Express => {
   registerCsrf(app)
   registerWorkspaces(app)
   registerPats(app)
+  registerWorkplans(app)
 
   app.get('/', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' })
