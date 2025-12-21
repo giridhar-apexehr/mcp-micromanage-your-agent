@@ -3,6 +3,7 @@ import { Tool, createErrorResponse } from '../common.js'
 import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import { callRemoteTool } from '../proxy/http.js'
 
 export const TRACK_TOOL: Tool<{
   agentId: z.ZodString
@@ -54,34 +55,13 @@ export const TRACK_TOOL: Tool<{
       logger.info('Track tool called')
 
       if (mcpProxyConfig.mode === 'remote') {
-        const url = new URL(
-          `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/track`,
-          mcpProxyConfig.serverBaseUrl,
-        )
-        if (params.prIndex !== undefined) {
-          url.searchParams.set('prIndex', String(params.prIndex))
-        }
-
-        const res = await fetch(url.toString(), {
-          headers: {
-            authorization: `Bearer ${mcpProxyConfig.apiKey}`,
+        return await callRemoteTool(mcpProxyConfig, {
+          method: 'GET',
+          path: `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/track`,
+          query: {
+            prIndex: params.prIndex,
           },
         })
-
-        const bodyText = await res.text()
-        let body: unknown = bodyText
-        try {
-          body = JSON.parse(bodyText)
-        } catch {
-          body = bodyText
-        }
-
-        return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(body, null, 2) },
-          ],
-          isError: res.status >= 400,
-        }
       }
 
       if (!workPlan) {

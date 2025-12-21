@@ -3,6 +3,7 @@ import { Tool, createErrorResponse, InsertCommitInput } from '../common.js'
 import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import { callRemoteTool } from '../proxy/http.js'
 
 const goalLengthErrorMessage =
   'Goal must be at most 60 characters. Consider moving detailed information to the developerNote field.'
@@ -72,11 +73,6 @@ export const INSERT_COMMIT_TOOL: Tool<{
       )
 
       if (mcpProxyConfig.mode === 'remote') {
-        const url = new URL(
-          `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/insert-commit`,
-          mcpProxyConfig.serverBaseUrl,
-        )
-
         const payload: InsertCommitInput = {
           prIndex: params.prIndex,
           insertAfterCommitIndex: params.insertAfterCommitIndex,
@@ -86,29 +82,11 @@ export const INSERT_COMMIT_TOOL: Tool<{
             : undefined,
         }
 
-        const res = await fetch(url.toString(), {
+        return await callRemoteTool(mcpProxyConfig, {
           method: 'POST',
-          headers: {
-            authorization: `Bearer ${mcpProxyConfig.apiKey}`,
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify(payload),
+          path: `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/insert-commit`,
+          body: payload,
         })
-
-        const bodyText = await res.text()
-        let body: unknown = bodyText
-        try {
-          body = JSON.parse(bodyText)
-        } catch {
-          body = bodyText
-        }
-
-        return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(body, null, 2) },
-          ],
-          isError: res.status >= 400,
-        }
       }
 
       if (!workPlan) {
