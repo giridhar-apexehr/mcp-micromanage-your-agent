@@ -31,6 +31,11 @@ export const registerCsrf = (app: express.Express): void => {
   })
 
   app.use((req, res, next) => {
+    if ((req as { auth?: unknown }).auth) {
+      next()
+      return
+    }
+
     if (isSafeMethod(req.method)) {
       next()
       return

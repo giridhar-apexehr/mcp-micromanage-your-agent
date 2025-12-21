@@ -41,9 +41,34 @@ export interface WorkspaceInvitesTable {
   created_at: Timestamp
 }
 
+export interface UserPatsTable {
+  id: string
+  user_id: string
+  workspace_id: string | null
+  name: string
+  secret_hash: string
+  created_at: Timestamp
+  last_used_at: Timestamp | null
+  revoked_at: Timestamp | null
+}
+
+export interface AuditLogTable {
+  id: string
+  at: Timestamp
+  actor_user_id: string
+  actor_pat_id: string | null
+  workspace_id: string | null
+  action: string
+  resource_type: string
+  resource_id: string | null
+  metadata_json: string | null
+}
+
 export interface DB {
   users: UsersTable
   workspaces: WorkspacesTable
   workspace_members: WorkspaceMembersTable
   workspace_invites: WorkspaceInvitesTable
+  user_pats: UserPatsTable
+  audit_log: AuditLogTable
 }

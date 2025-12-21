@@ -3,13 +3,14 @@ import crypto from 'node:crypto'
 import type express from 'express'
 import { Router } from 'express'
 
+import { writeAuditEvent } from '../audit/index.js'
+import { createDatabase, destroyDatabase } from '../db/index.js'
+
 declare module 'express-session' {
   interface SessionData {
     userId?: string
   }
 }
-
-import { createDatabase, destroyDatabase } from '../db/index.js'
 
 type WorkspaceRole = 'owner' | 'admin' | 'editor' | 'viewer'
 
@@ -32,6 +33,10 @@ const addDaysIso = (date: Date, days: number): string => {
 }
 
 const getAuthenticatedUserId = (req: express.Request): string | undefined => {
+  if ((req as { auth?: { userId?: string } }).auth?.userId) {
+    return (req as { auth: { userId: string } }).auth.userId
+  }
+
   if (process.env.NODE_ENV === 'test') {
     const testUserId = req.get('x-test-user-id')
     if (testUserId) return testUserId
@@ -41,6 +46,30 @@ const getAuthenticatedUserId = (req: express.Request): string | undefined => {
   const userId = (req.session as { userId?: string }).userId
   if (!userId) return undefined
   return userId
+}
+
+const getPatWorkspaceId = (req: express.Request): string | null | undefined => {
+  const auth = (req as { auth?: { workspaceId?: string | null } }).auth
+  if (!auth) return undefined
+  if (auth.workspaceId === null) return null
+  if (typeof auth.workspaceId === 'string') return auth.workspaceId
+  return undefined
+}
+
+const enforcePatWorkspaceScope = (
+  req: express.Request,
+  res: express.Response,
+  workspaceId: string,
+): boolean => {
+  const patWorkspaceId = getPatWorkspaceId(req)
+  if (patWorkspaceId === undefined || patWorkspaceId === null) return true
+
+  if (patWorkspaceId !== workspaceId) {
+    res.status(403).json({ error: 'Forbidden' })
+    return false
+  }
+
+  return true
 }
 
 const requireUserId = (
@@ -98,13 +127,26 @@ const requireWorkspaceRole = async (
 export const createWorkspacesRouter = (): Router => {
   const router = Router()
 
+  router.use('/workspaces/:workspaceId', (req, res, next) => {
+    const workspaceId = String(req.params.workspaceId ?? '').trim()
+    if (!workspaceId) {
+      res.status(400).json({ error: 'Missing workspaceId' })
+      return
+    }
+
+    if (!enforcePatWorkspaceScope(req, res, workspaceId)) return
+    next()
+  })
+
   router.get('/workspaces', async (req, res) => {
     const userId = requireUserId(req, res)
     if (!userId) return
 
     const handle = createDatabase()
     try {
-      const workspaces = await handle.db
+      const patWorkspaceId = getPatWorkspaceId(req)
+
+      let query = handle.db
         .selectFrom('workspaces')
         .innerJoin(
           'workspace_members',
@@ -118,6 +160,12 @@ export const createWorkspacesRouter = (): Router => {
           'workspace_members.role as role',
         ])
         .where('workspace_members.user_id', '=', userId)
+
+      if (patWorkspaceId && typeof patWorkspaceId === 'string') {
+        query = query.where('workspaces.id', '=', patWorkspaceId)
+      }
+
+      const workspaces = await query
         .orderBy('workspaces.created_at', 'asc')
         .execute()
 
@@ -130,6 +178,17 @@ export const createWorkspacesRouter = (): Router => {
   router.post('/workspaces', async (req, res) => {
     const userId = requireUserId(req, res)
     if (!userId) return
+
+    if (req.auth?.type === 'pat') {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+
+    const patWorkspaceId = getPatWorkspaceId(req)
+    if (patWorkspaceId && typeof patWorkspaceId === 'string') {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
 
     const name = String(req.body?.name ?? '').trim()
     if (!name) {
@@ -164,6 +223,15 @@ export const createWorkspacesRouter = (): Router => {
           updated_at: now,
         })
         .execute()
+
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId: workspaceId,
+        action: 'workspaces.create',
+        resourceType: 'workspace',
+        resourceId: workspaceId,
+        metadata: { name },
+      })
 
       res.status(201).json({ id: workspaceId, name })
     } finally {
@@ -273,6 +341,15 @@ export const createWorkspacesRouter = (): Router => {
         })
         .execute()
 
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId,
+        action: 'workspace_members.add',
+        resourceType: 'workspace_member',
+        resourceId: `${workspaceId}:${targetUserId}`,
+        metadata: { targetUserId, role },
+      })
+
       res.status(201).json({ ok: true })
     } finally {
       await destroyDatabase(handle)
@@ -312,6 +389,15 @@ export const createWorkspacesRouter = (): Router => {
           .where('workspace_id', '=', workspaceId)
           .where('user_id', '=', targetUserId)
           .execute()
+
+        await writeAuditEvent(handle.db, req, {
+          actorUserId: userId,
+          workspaceId,
+          action: 'workspace_members.remove',
+          resourceType: 'workspace_member',
+          resourceId: `${workspaceId}:${targetUserId}`,
+          metadata: { targetUserId },
+        })
 
         res.status(200).json({ ok: true })
       } finally {
@@ -365,6 +451,15 @@ export const createWorkspacesRouter = (): Router => {
         })
         .execute()
 
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId,
+        action: 'workspace_invites.create',
+        resourceType: 'workspace_invite',
+        resourceId: inviteId,
+        metadata: { expiresAt, role: 'viewer' },
+      })
+
       res.status(201).json({ token, expiresAt, role: 'viewer' })
     } finally {
       await destroyDatabase(handle)
@@ -402,6 +497,8 @@ export const createWorkspacesRouter = (): Router => {
         return
       }
 
+      if (!enforcePatWorkspaceScope(req, res, invite.workspace_id)) return
+
       const nowDate = new Date()
       const expiresDate = new Date(invite.expires_at)
       if (Number.isNaN(expiresDate.getTime()) || expiresDate <= nowDate) {
@@ -428,6 +525,15 @@ export const createWorkspacesRouter = (): Router => {
         .set({ used_at: now })
         .where('id', '=', invite.id)
         .execute()
+
+      await writeAuditEvent(handle.db, req, {
+        actorUserId: userId,
+        workspaceId: invite.workspace_id,
+        action: 'workspace_invites.accept',
+        resourceType: 'workspace_invite',
+        resourceId: invite.id,
+        metadata: { role: invite.role },
+      })
 
       res.status(200).json({ ok: true, workspaceId: invite.workspace_id })
     } finally {
