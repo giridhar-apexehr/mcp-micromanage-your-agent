@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { Tool, createErrorResponse, InsertCommitInput } from '../common.js'
-import { workPlan } from '../../index.js'
+import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import { callRemoteTool } from '../proxy/http.js'
 
 const goalLengthErrorMessage =
   'Goal must be at most 60 characters. Consider moving detailed information to the developerNote field.'
@@ -70,6 +71,23 @@ export const INSERT_COMMIT_TOOL: Tool<{
       logger.info(
         `InsertCommit tool called for PR #${params.prIndex} after commit #${params.insertAfterCommitIndex}`,
       )
+
+      if (mcpProxyConfig.mode === 'remote') {
+        const payload: InsertCommitInput = {
+          prIndex: params.prIndex,
+          insertAfterCommitIndex: params.insertAfterCommitIndex,
+          goal: params.goal,
+          developerNote: params.developerNote
+            ? String(params.developerNote)
+            : undefined,
+        }
+
+        return await callRemoteTool(mcpProxyConfig, {
+          method: 'POST',
+          path: `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/insert-commit`,
+          body: payload,
+        })
+      }
 
       if (!workPlan) {
         logger.error('WorkPlan instance is not available')

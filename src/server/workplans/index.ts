@@ -2,6 +2,7 @@ import { Router } from 'express'
 
 import { enforcePatWorkspaceScope } from './authz.js'
 import { registerWorkplanImportExportRoutes } from './routesImportExport.js'
+import { registerWorkplanMeRoutes } from './routesMe.js'
 import { registerWorkplanCrudRoutes } from './routesCrud.js'
 import { registerWorkplanToolRoutes } from './routesTools.js'
 
@@ -22,6 +23,7 @@ export const createWorkplansRouter = (): Router => {
   registerWorkplanCrudRoutes(router)
   registerWorkplanToolRoutes(router)
   registerWorkplanImportExportRoutes(router)
+  registerWorkplanMeRoutes(router)
 
   return router
 }

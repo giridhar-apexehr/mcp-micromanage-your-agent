@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { Tool, createErrorResponse, UpdateStatusInput } from '../common.js'
-import { workPlan } from '../../index.js'
+import { mcpProxyConfig, workPlan } from '../../index.js'
 import logger from '../../utils/logger.js'
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js'
+import { callRemoteTool } from '../proxy/http.js'
 
 export const UPDATE_STATUS_TOOL: Tool<{
   prIndex: z.ZodNumber
@@ -89,6 +90,24 @@ export const UPDATE_STATUS_TOOL: Tool<{
       logger.info(
         `Update tool called for PR #${params.prIndex}, commit #${params.commitIndex}, status: ${params.status}`,
       )
+
+      if (mcpProxyConfig.mode === 'remote') {
+        const payload: UpdateStatusInput = {
+          prIndex: params.prIndex,
+          commitIndex: params.commitIndex,
+          status: params.status,
+          goal: params.goal ? String(params.goal) : undefined,
+          developerNote: params.developerNote
+            ? String(params.developerNote)
+            : undefined,
+        }
+
+        return await callRemoteTool(mcpProxyConfig, {
+          method: 'POST',
+          path: `/api/me/workplans/${encodeURIComponent(String(params.workplanId))}/update`,
+          body: payload,
+        })
+      }
 
       if (!workPlan) {
         logger.error('WorkPlan instance is not available')

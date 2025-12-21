@@ -14,6 +14,7 @@ import {
 import { taskPlanningGuide } from './prompts.js'
 import logger, { LogLevel } from './utils/logger.js'
 import { WorkPlan, WorkPlanInitOptions } from './aggregates/workplan.js'
+import { loadMcpProxyConfig } from './tools/proxy/config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -29,6 +30,15 @@ const workPlanOptions: WorkPlanInitOptions = {
   dataDir,
   dataFileName,
   legacyWriterEnabled: false,
+}
+
+export const mcpProxyConfig = loadMcpProxyConfig()
+if (mcpProxyConfig.mode === 'remote') {
+  logger.info(
+    `MCP proxy config detected (remote): serverBaseUrl=${mcpProxyConfig.serverBaseUrl}`,
+  )
+} else {
+  logger.info('MCP proxy config: local mode')
 }
 
 export const workPlan = new WorkPlan()
