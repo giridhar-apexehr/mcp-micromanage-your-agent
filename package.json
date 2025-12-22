@@ -13,9 +13,12 @@
   ],
   "scripts": {
     "build": "tsc && shx chmod +x dist/*.js",
+    "build:ui": "npm --prefix visualization run build -- --outDir ../dist/ui --base=/",
     "db:migrate": "node dist/server/db/cli/migrate.js",
     "db:codegen": "DATABASE_URL=./data/app.sqlite kysely-codegen --dialect sqlite --out-file ./src/server/db/types.ts",
     "start:http": "node dist/server/index.js",
+    "start:http:watch": "node --watch dist/server/index.js",
+    "dev:http": "sh -c 'npm run watch & npm run start:http:watch'",
     "prepare": "npm run build",
     "watch": "tsc --watch",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",

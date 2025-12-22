@@ -16,14 +16,18 @@ type ErrorOverlayProps = {
  * Displays a blocking error message with a reload action using HeroUI primitives.
  */
 export function ErrorOverlay({ loadError, onReload }: ErrorOverlayProps) {
+  const portalContainer = typeof document !== 'undefined' ? document.body : undefined
+
   return (
     <Modal
       isOpen
       isDismissable={false}
       hideCloseButton
+      placement="center"
+      portalContainer={portalContainer}
       classNames={{
         base: 'bg-white dark:bg-gray-900',
-        wrapper: 'z-50',
+        wrapper: 'z-50 !items-center !justify-center p-4',
       }}
     >
       <ModalContent className="max-w-md">

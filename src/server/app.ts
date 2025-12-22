@@ -1,4 +1,7 @@
 import cors from 'cors'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express, {
   type NextFunction,
   type Request,
@@ -27,10 +30,6 @@ export const createApp = (config: HttpServerConfig): express.Express => {
   registerPats(app)
   registerWorkplans(app)
 
-  app.get('/', (_req: Request, res: Response) => {
-    res.status(200).json({ status: 'ok' })
-  })
-
   app.get('/healthz', (_req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' })
   })
@@ -50,6 +49,47 @@ export const createApp = (config: HttpServerConfig): express.Express => {
       res.status(503).json({ status: 'not_ready' })
     }
   })
+
+  const serverDir = path.dirname(fileURLToPath(import.meta.url))
+  const uiDir = path.resolve(serverDir, '../ui')
+  const uiIndexPath = path.join(uiDir, 'index.html')
+
+  if (fs.existsSync(uiIndexPath)) {
+    app.use(express.static(uiDir, { index: false }))
+
+    app.get('/', (_req: Request, res: Response) => {
+      res.sendFile(uiIndexPath)
+    })
+
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (req.method !== 'GET') {
+        next()
+        return
+      }
+
+      const accept = String(req.get('accept') ?? '')
+      if (!accept.includes('text/html')) {
+        next()
+        return
+      }
+
+      const p = req.path
+      if (
+        p === '/healthz' ||
+        p === '/readyz' ||
+        p.startsWith('/api/') ||
+        p.startsWith('/auth/') ||
+        p.startsWith('/csrf/') ||
+        p === '/ui' ||
+        p.startsWith('/ui/')
+      ) {
+        next()
+        return
+      }
+
+      res.sendFile(uiIndexPath)
+    })
+  }
 
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     logger.logError('HTTP request error', err)

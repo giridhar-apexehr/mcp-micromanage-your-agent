@@ -70,7 +70,9 @@ export function DashboardPage({
             <div className="space-y-6">
               {(workplanCatalog?.agents ?? []).map((agent) => (
                 <div key={agent.agentId} className="morphic-subpanel">
-                  <div className="font-semibold mb-3">{agent.agentId}</div>
+                  <div className="font-semibold mb-3">
+                    {agent.displayName ?? agent.agentId}
+                  </div>
                   {agent.workplans.length === 0 ? (
                     <div className="text-sm opacity-70">No workplans</div>
                   ) : (
