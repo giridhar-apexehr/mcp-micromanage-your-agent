@@ -88,9 +88,19 @@ export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
           ? workspacesBody.workspaces
           : []
 
-      const workspaceIds = rawWorkspaces
-        .map((ws) => (isRecord(ws) ? getString(ws.id) : null))
-        .filter((id): id is string => Boolean(id))
+      const workspaceSummaries = rawWorkspaces
+        .map((ws): { id: string; name: string | null } | null => {
+          if (!isRecord(ws)) return null
+          const id = getString(ws.id)
+          if (!id) return null
+          const name = getString(ws.name)
+          return { id, name }
+        })
+        .filter(
+          (ws): ws is { id: string; name: string | null } => ws !== null,
+        )
+
+      const workspaceIds = workspaceSummaries.map((ws) => ws.id)
 
       const workplansByWorkspace = await Promise.all(
         workspaceIds.map(async (workspaceId) => {
@@ -116,6 +126,9 @@ export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
       const catalogPayload = {
         agents: Object.fromEntries(
           workplansByWorkspace.map(({ workspaceId, workplans }) => {
+            const workspaceName =
+              workspaceSummaries.find((ws) => ws.id === workspaceId)?.name ??
+              undefined
             const workplanEntries = Object.fromEntries(
               workplans
                 .map((wp) => {
@@ -130,7 +143,13 @@ export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
                 ),
             )
 
-            return [workspaceId, { workplans: workplanEntries }]
+            return [
+              workspaceId,
+              {
+                ...(workspaceName ? { name: workspaceName } : {}),
+                workplans: workplanEntries,
+              },
+            ]
           }),
         ),
       }

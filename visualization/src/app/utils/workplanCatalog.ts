@@ -5,6 +5,7 @@
 export type WorkplanCatalog = {
   agents: Array<{
     agentId: string
+    displayName?: string
     workplans: Array<{
       workplanId: string
       goal?: string
@@ -47,6 +48,10 @@ export const buildWorkplanCatalog = (
     const agentsObject = actualWorkPlan.agents as Record<string, unknown>
     const agents = Object.entries(agentsObject)
       .map(([agentId, agentState]) => {
+        const displayName =
+          isRecord(agentState) && typeof agentState.name === 'string'
+            ? String(agentState.name)
+            : undefined
         const rawWorkplans: Record<string, unknown> =
           isRecord(agentState) && isRecord(agentState.workplans)
             ? (agentState.workplans as Record<string, unknown>)
@@ -63,7 +68,7 @@ export const buildWorkplanCatalog = (
           })
           .sort((a, b) => a.workplanId.localeCompare(b.workplanId))
 
-        return { agentId, workplans }
+        return { agentId, displayName, workplans }
       })
       .sort((a, b) => a.agentId.localeCompare(b.agentId))
 
