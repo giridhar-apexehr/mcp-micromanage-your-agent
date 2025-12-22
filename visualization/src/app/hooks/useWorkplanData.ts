@@ -32,48 +32,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
-const resolveTicketFromLegacyPayload = (
-  actualWorkPlan: unknown,
-  requestedAgentId: string,
-  requestedWorkplanId: string,
-): unknown | null => {
-  if (!isRecord(actualWorkPlan)) {
-    return null
-  }
-
-  const record = actualWorkPlan
-
-  if ('currentTicket' in record && record.currentTicket) {
-    return record.currentTicket
-  }
-
-  if ('workplans' in record && isRecord(record.workplans)) {
-    const workplans = record.workplans
-    if (requestedWorkplanId in workplans) {
-      return workplans[requestedWorkplanId]
-    }
-    return null
-  }
-
-  if ('agents' in record && isRecord(record.agents)) {
-    const agents = record.agents
-    const resolvedAgent = requestedAgentId in agents ? agents[requestedAgentId] : null
-
-    if (!isRecord(resolvedAgent)) {
-      return null
-    }
-
-    if ('workplans' in resolvedAgent && isRecord(resolvedAgent.workplans)) {
-      const workplans = resolvedAgent.workplans
-      if (requestedWorkplanId in workplans) {
-        return workplans[requestedWorkplanId]
-      }
-    }
-
-    return null
-  }
-
-  return null
+const getString = (value: unknown): string | null => {
+  return typeof value === 'string' ? value : null
 }
 
 /**
@@ -103,32 +63,76 @@ export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
           Expires: '0',
+          accept: 'application/json',
         },
       }
 
-      const timestamp = new Date().getTime()
+      const workspacesRes = await fetch('/api/workspaces', fetchOptions)
+      if (workspacesRes.status === 401) {
+        setWorkplan(null)
+        setWorkplanCatalog({ agents: [] })
+        setLastLoadedTime(new Date())
+        setLoadError(null)
+        return
+      }
 
-      let legacyWorkPlan: unknown | null = null
-      let catalogPayload: unknown | null = null
-
-      const agentsIndexResponse = await fetch(
-        `/data/agents.json?t=${timestamp}`,
-        fetchOptions,
-      )
-      if (agentsIndexResponse.ok) {
-        catalogPayload = (await agentsIndexResponse.json()) as unknown
-      } else {
-        const legacyResponse = await fetch(
-          `/data/workplan.json?t=${timestamp}`,
-          fetchOptions,
+      if (!workspacesRes.ok) {
+        throw new Error(
+          `Failed to fetch workspaces. Status: ${workspacesRes.status}`,
         )
-        if (!legacyResponse.ok) {
-          throw new Error(
-            `Failed to fetch workplan data. Status: ${legacyResponse.status}`,
+      }
+
+      const workspacesBody = (await workspacesRes.json()) as unknown
+      const rawWorkspaces =
+        isRecord(workspacesBody) && Array.isArray(workspacesBody.workspaces)
+          ? workspacesBody.workspaces
+          : []
+
+      const workspaceIds = rawWorkspaces
+        .map((ws) => (isRecord(ws) ? getString(ws.id) : null))
+        .filter((id): id is string => Boolean(id))
+
+      const workplansByWorkspace = await Promise.all(
+        workspaceIds.map(async (workspaceId) => {
+          const res = await fetch(
+            `/api/workspaces/${encodeURIComponent(workspaceId)}/workplans`,
+            fetchOptions,
           )
-        }
-        legacyWorkPlan = (await legacyResponse.json()) as unknown
-        catalogPayload = legacyWorkPlan
+          if (!res.ok) {
+            return { workspaceId, workplans: [] as Array<Record<string, unknown>> }
+          }
+          const body = (await res.json()) as unknown
+          const workplans =
+            isRecord(body) && Array.isArray(body.workplans) ? body.workplans : []
+          return {
+            workspaceId,
+            workplans: workplans.filter((wp): wp is Record<string, unknown> =>
+              isRecord(wp),
+            ),
+          }
+        }),
+      )
+
+      const catalogPayload = {
+        agents: Object.fromEntries(
+          workplansByWorkspace.map(({ workspaceId, workplans }) => {
+            const workplanEntries = Object.fromEntries(
+              workplans
+                .map((wp) => {
+                  const workplanId = getString(wp.id)
+                  if (!workplanId) return null
+                  const goal = getString(wp.goal) ?? ''
+                  const ticketLike = { goal }
+                  return [workplanId, ticketLike]
+                })
+                .filter(
+                  (entry): entry is [string, { goal: string }] => entry !== null,
+                ),
+            )
+
+            return [workspaceId, { workplans: workplanEntries }]
+          }),
+        ),
       }
 
       const catalog = buildWorkplanCatalog(catalogPayload)
@@ -158,86 +162,22 @@ export const useWorkplanData = (enabled = true): UseWorkplanDataResult => {
       }
 
       const selectedTicketResponse = await fetch(
-        `/data/agents/${requestedAgentId}/workplans/${requestedWorkplanId}.json?t=${timestamp}`,
+        `/api/workspaces/${encodeURIComponent(requestedAgentId)}/workplans/${encodeURIComponent(requestedWorkplanId)}`,
         fetchOptions,
       )
 
       if (!selectedTicketResponse.ok) {
-        if (!legacyWorkPlan) {
-          const legacyResponse = await fetch(
-            `/data/workplan.json?t=${timestamp}`,
-            fetchOptions,
-          )
-          if (legacyResponse.ok) {
-            legacyWorkPlan = (await legacyResponse.json()) as unknown
-          }
-        }
-
-        const resolvedTicket = legacyWorkPlan
-          ? resolveTicketFromLegacyPayload(
-              legacyWorkPlan,
-              requestedAgentId,
-              requestedWorkplanId,
-            )
-          : null
-
-        if (!resolvedTicket) {
-          setWorkplan(null)
-          setLastLoadedTime(new Date())
-          setLoadError(null)
-          return
-        }
-
-        const resolvedTicketAsUnknown: unknown = resolvedTicket
-        if (
-          !isRecord(resolvedTicketAsUnknown) ||
-          typeof resolvedTicketAsUnknown.goal !== 'string' ||
-          !Array.isArray(resolvedTicketAsUnknown.pullRequests)
-        ) {
-          setWorkplan(null)
-          setLastLoadedTime(new Date())
-          setLoadError(null)
-          return
-        }
-
-        const convertedWorkPlan: WorkPlan = {
-          goal: resolvedTicketAsUnknown.goal,
-          prPlans: resolvedTicketAsUnknown.pullRequests.map(
-            (pr: {
-              goal: string
-              status: string
-              developerNote?: string
-              commits: Array<{
-                goal: string
-                status: string
-                developerNote?: string
-              }>
-            }) => ({
-              goal: pr.goal,
-              status: pr.status as CommitStatus,
-              developerNote: pr.developerNote,
-              commitPlans: pr.commits.map(
-                (commit: {
-                  goal: string
-                  status: string
-                  developerNote?: string
-                }) => ({
-                  goal: commit.goal,
-                  status: commit.status as CommitStatus,
-                  developerNote: commit.developerNote,
-                }),
-              ),
-            }),
-          ),
-        }
-
-        setWorkplan(convertedWorkPlan)
+        setWorkplan(null)
         setLastLoadedTime(new Date())
         setLoadError(null)
         return
       }
 
-      const resolvedTicket: unknown = await selectedTicketResponse.json()
+      const selectedTicketBody = (await selectedTicketResponse.json()) as unknown
+      const resolvedTicket: unknown =
+        isRecord(selectedTicketBody) && isRecord(selectedTicketBody.workplan)
+          ? selectedTicketBody.workplan
+          : null
 
       // If nothing selected or selection is ambiguous, we show the dashboard instead of erroring.
       if (!resolvedTicket || resolvedTicket === 'noTicket') {
